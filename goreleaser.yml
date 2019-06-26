@@ -1,0 +1,11 @@
+build:
+  binary: bomin
+  goos:
+      - windows
+      - darwin
+      - linux
+      - freebsd
+  goarch:
+      - amd64
+      - 386
+      - arm

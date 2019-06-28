@@ -110,11 +110,11 @@ func startHTTPOpera(stream *rtmp.RtmpStream) {
 func main() {
 	defer func() {
 		if r := recover(); r != nil {
-			log.Println("livego panic: ", r)
+			log.Println("bomin panic: ", r)
 			time.Sleep(1 * time.Second)
 		}
 	}()
-	log.Println("start livego, version", version)
+	log.Println("start bomin, version", version)
 	err := configure.LoadConfig(*configfilename)
 	if err != nil {
 		return

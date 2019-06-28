@@ -16,7 +16,6 @@ const (
 	videoHZ      = 90000
 	aacSampleLen = 1024
 	maxQueueNum  = 512
-
 	h264_default_hz uint64 = 90
 )
 

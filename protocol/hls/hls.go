@@ -19,7 +19,7 @@ const (
 )
 
 var (
-	ErrNoPublisher         = errors.New("No publisher")
+	ErrNoPublisher         = errors.New("no publisher")
 	ErrInvalidReq          = errors.New("invalid req url path")
 	ErrNoSupportVideoCodec = errors.New("no support video codec")
 	ErrNoSupportAudioCodec = errors.New("no support audio codec")

@@ -30,6 +30,6 @@ Directly download the compiled [binary file] (https://github.com/passionstorm/bo
 2. Start the service: execute the `livego` binary to start the livego service;
 3. Upstream Push: Push the video stream to `rtmp://localhost:1935/live/movie` via the `RTMP` protocol, for example using `ffmpeg -re -i demo.flv -c copy -f flv rtmp:/ /localhost:1935/live/movie` push;
 4. Downstream playback: The following three playback protocols are supported. The playback address is as follows:
-    - `RTMP`:`rtmp://localhost:1935/live/movie`
-    - `FLV`:`http://127.0.0.1:7001/live/movie.flv`
-    - `HLS`:`http://127.0.0.1:7002/live/movie.m3u8`
+* `RTMP`:`rtmp://localhost:1935/live/movie`
+* `FLV`:`http://127.0.0.1:7001/live/movie.flv`
+* `HLS`:`http://127.0.0.1:7002/live/movie.m3u8`

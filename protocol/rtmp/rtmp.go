@@ -91,7 +91,7 @@ func (s *Server) Serve(listener net.Listener) (err error) {
 			return
 		}
 		conn := core.NewConn(netconn, 4*1024)
-		log.Println("new client, connect remote:", conn.RemoteAddr().String(),
+		log.Println("Client connect remote:", conn.RemoteAddr().String(),
 			"local:", conn.LocalAddr().String())
 		go s.handleConn(conn)
 	}
@@ -111,33 +111,32 @@ func (s *Server) handleConn(conn *core.Conn) error {
 		return err
 	}
 
-	appname, _, _ := connServer.GetInfo()
+	appName, _, _ := connServer.GetInfo()
 
-	if ret := configure.CheckAppName(appname); !ret {
-		err := errors.New(fmt.Sprintf("application name=%s is not configured", appname))
+	if ret := configure.CheckAppName(appName); !ret {
+		err := errors.New(fmt.Sprintf("application name=%s is not configured", appName))
 		conn.Close()
 		log.Println("CheckAppName err:", err)
 		return err
 	}
 
-	log.Printf("handleConn: IsPublisher=%v", connServer.IsPublisher())
 	if connServer.IsPublisher() {
-		if pushlist, ret := configure.GetStaticPushUrlList(appname); ret && (pushlist != nil) {
-			log.Printf("GetStaticPushUrlList: %v", pushlist)
+		if pushList, ret := configure.GetStaticPushUrlList(appName); ret && (pushList != nil) {
+			log.Printf("GetStaticPushUrlList: %v", pushList)
 		}
 		reader := NewVirReader(connServer)
 		s.handler.HandleReader(reader)
-		log.Printf("new publisher: %+v", reader.Info())
+		log.Printf("Publisher:%v", reader.Uid)
 
 		if s.getter != nil {
 			writeType := reflect.TypeOf(s.getter)
-			log.Printf("handleConn:writeType=%v", writeType)
+			log.Printf("Connect type:%v", writeType)
 			writer := s.getter.GetWriter(reader.Info())
 			s.handler.HandleWriter(writer)
 		}
 	} else {
 		writer := NewVirWriter(connServer)
-		log.Printf("new player: %+v", writer.Info())
+		log.Printf("Player:%v", writer.Uid)
 		s.handler.HandleWriter(writer)
 	}
 
@@ -188,10 +187,10 @@ func NewVirWriter(conn StreamReadWriteCloser) *VirWriter {
 
 	go ret.Check()
 	go func() {
-		err := ret.SendPacket()
-		if err != nil {
-			log.Println(err)
-		}
+		ret.SendPacket()
+		//if err != nil {
+		//	log.Println(err)
+		//}
 	}()
 	return ret
 }
@@ -285,7 +284,7 @@ func (v *VirWriter) Write(p *av.Packet) (err error) {
 }
 
 func (v *VirWriter) SendPacket() error {
-	Flush := reflect.ValueOf(v.conn).MethodByName("Flush");
+	Flush := reflect.ValueOf(v.conn).MethodByName("Flush")
 	var cs core.ChunkStream
 	for {
 		p, ok := <-v.packetQueue
@@ -314,7 +313,7 @@ func (v *VirWriter) SendPacket() error {
 				v.closed = true
 				return err
 			}
-			Flush.Call(nil);
+			Flush.Call(nil)
 		} else {
 			return errors.New("closed")
 		}
@@ -337,7 +336,7 @@ func (v *VirWriter) Info() (ret av.Info) {
 }
 
 func (v *VirWriter) Close(err error) {
-	log.Println("player ", v.Info(), "closed: "+err.Error())
+	log.Println("Disconnect player:", v.Info().UID)
 	if !v.closed {
 		close(v.packetQueue)
 	}

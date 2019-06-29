@@ -39,14 +39,14 @@ func LoadConfig(configfilename string) error {
 		return err
 	}
 
-	log.Printf("loadconfig: \r\n%s", string(data))
+	//log.Printf("loadconfig: \r\n%s", string(data))
 
 	err = json.Unmarshal(data, &RtmpServercfg)
 	if err != nil {
 		log.Printf("json.Unmarshal error:%v", err)
 		return err
 	}
-	log.Printf("get config json data:%v", RtmpServercfg)
+	//log.Printf("get config json data:%v", RtmpServercfg)
 	return nil
 }
 

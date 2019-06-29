@@ -13,9 +13,9 @@ import (
 )
 
 const (
-	videoHZ      = 90000
-	aacSampleLen = 1024
-	maxQueueNum  = 512
+	videoHZ                = 90000
+	aacSampleLen           = 1024
+	maxQueueNum            = 512
 	h264_default_hz uint64 = 90
 )
 
@@ -55,7 +55,7 @@ func NewSource(info av.Info) *Source {
 	go func() {
 		err := s.SendPacket()
 		if err != nil {
-			log.Println("send packet error: ", err)
+			log.Println("Send packet closed: ", err)
 			s.closed = true
 		}
 	}()
@@ -119,13 +119,13 @@ func (source *Source) Write(p *av.Packet) (err error) {
 
 func (source *Source) SendPacket() error {
 	defer func() {
-		log.Printf("[%v] hls sender stop", source.info)
+		//log.Printf("[%v] hls sender stop", source.info)
 		if r := recover(); r != nil {
 			log.Println("hls SendPacket panic: ", r)
 		}
 	}()
 
-	log.Printf("[%v] hls sender start", source.info)
+	//log.Printf("[%v] hls sender start", source.info)
 	for {
 		if source.closed {
 			return errors.New("closed")
@@ -178,7 +178,7 @@ func (source *Source) cleanup() {
 }
 
 func (source *Source) Close(err error) {
-	log.Println("hls source closed: ", source.info)
+	//log.Println("hls source closed: ", source.info)
 	if !source.closed {
 		source.cleanup()
 	}

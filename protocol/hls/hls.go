@@ -58,7 +58,7 @@ func (server *Server) GetWriter(info av.Info) av.WriteCloser {
 	var s *Source
 	ok := server.conns.Has(info.Key)
 	if !ok {
-		log.Println("new hls source")
+		//log.Println("new hls source")
 		s = NewSource(info)
 		server.conns.Set(info.Key, s)
 	} else {
@@ -82,7 +82,7 @@ func (server *Server) checkStop() {
 		for item := range server.conns.IterBuffered() {
 			v := item.Val.(*Source)
 			if !v.Alive() {
-				log.Println("check stop and remove: ", v.Info())
+				log.Println("check stop and remove: xxxxx", v.Info())
 				server.conns.Remove(item.Key)
 			}
 		}

@@ -114,7 +114,7 @@ func main() {
 			time.Sleep(1 * time.Second)
 		}
 	}()
-	log.Println("start bomin, version", version)
+	//log.Println("start bomin, version", version)
 	err := configure.LoadConfig(*configfilename)
 	if err != nil {
 		return

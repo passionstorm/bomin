@@ -1,31 +1,56 @@
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta http-equiv="X-UA-Compatible" content="ie=edge"/>
     <title>Go WebSocket Tutorial</title>
-  </head>
-  <body>
-    <h2>Hello World</h2>
+    <style>
+        *::-webkit-media-controls-start-playback-button {
+            display: none !important;
+        }
 
-    <script>
-        let socket = new WebSocket("ws://127.0.0.1:7002/ws");
-        console.log("Attempting Connection...");
+    </style>
+    <script src="http://bilibili.github.io/flv.js/dist/flv.js"></script>
+</head>
+<body>
+<h2>Hello World</h2>
+<video id="video" controls="false" autoplay></video>
+<script>
+    let socket = new WebSocket("ws://127.0.0.1:7002/ws");
 
-        socket.onopen = () => {
-            console.log("Successfully Connected");
-            socket.send("Hi From the Client!")
-        };
-        
-        socket.onclose = event => {
-            console.log("Socket Closed Connection: ", event);
-            socket.send("Client Closed!")
-        };
 
-        socket.onerror = error => {
-            console.log("Socket Error: ", error);
-        };
+    socket.onopen = () => {
+        console.log("Successfully Connected");
+    };
 
-    </script>
-  </body>
+    socket.onmessage = function (event) {
+        // console.log(event);
+        // sourceBuffer.append(new Uint8Array(event.data));
+        var message = event.data;
+        console.log(message);
+    };
+
+    socket.onclose = event => {
+        console.log("Socket Closed Connection: ", event);
+        socket.send("Client Closed!")
+    };
+
+    socket.onerror = error => {
+        console.log("Socket Error: ", error);
+    };
+
+    // if (flvjs.isSupported()) {
+    var videoElement = document.getElementById('video');
+    var flvPlayer = flvjs.createPlayer({
+        type: 'flv',
+        "isLive": true,
+        url: 'http://127.0.0.1:7001/live/movie.flv'
+    });
+    flvPlayer.attachMediaElement(videoElement);
+    flvPlayer.load();
+    // flvPlayer.play();
+    // }
+
+</script>
+</body>
 </html>

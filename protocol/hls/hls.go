@@ -51,7 +51,7 @@ func (server *Server) Serve(listener net.Listener) error {
 		server.handle(w, r)
 	})
 	mux.HandleFunc("/ws",  func(w http.ResponseWriter, r *http.Request) {
-		wsEndpoint(w, r)
+		server.onWs(w, r)
 	})
 
 	server.listener = listener
@@ -99,15 +99,25 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
-func wsEndpoint(w http.ResponseWriter, r *http.Request) {
+func (server *Server) onWs(w http.ResponseWriter, r *http.Request) {
 	upgrader.CheckOrigin = func(r *http.Request) bool { return true }
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)
 	}
-
 	log.Println("Client Connected")
-	err = ws.WriteMessage(1, []byte("Hi Client!"))
+	conn := server.getConn("live/movie")
+	if conn == nil {
+		http.Error(w, ErrNoPublisher.Error(), http.StatusForbidden)
+		return
+	}
+	tsCache := conn.GetCacheInc()
+	if tsCache == nil {
+		http.Error(w, ErrNoPublisher.Error(), http.StatusForbidden)
+		return
+	}
+	body, err := tsCache.GenM3U8PlayList()
+	err = ws.WriteMessage(1, body)
 	if err != nil {
 		log.Println(err)
 	}

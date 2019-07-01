@@ -125,7 +125,6 @@ func (source *Source) SendPacket() error {
 		}
 	}()
 
-	//log.Printf("[%v] hls sender start", source.info)
 	for {
 		if source.closed {
 			return errors.New("closed")

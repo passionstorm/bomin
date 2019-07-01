@@ -4,6 +4,7 @@ import (
 	"bomin/av"
 	"errors"
 	"fmt"
+	"github.com/gorilla/websocket"
 	"github.com/orcaman/concurrent-map"
 	"log"
 	"net"
@@ -49,6 +50,10 @@ func (server *Server) Serve(listener net.Listener) error {
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		server.handle(w, r)
 	})
+	mux.HandleFunc("/ws",  func(w http.ResponseWriter, r *http.Request) {
+		wsEndpoint(w, r)
+	})
+
 	server.listener = listener
 	http.Serve(listener, mux)
 	return nil
@@ -86,6 +91,47 @@ func (server *Server) checkStop() {
 				server.conns.Remove(item.Key)
 			}
 		}
+	}
+}
+
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+}
+
+func wsEndpoint(w http.ResponseWriter, r *http.Request) {
+	upgrader.CheckOrigin = func(r *http.Request) bool { return true }
+	ws, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Println(err)
+	}
+
+	log.Println("Client Connected")
+	err = ws.WriteMessage(1, []byte("Hi Client!"))
+	if err != nil {
+		log.Println(err)
+	}
+	// listen indefinitely for new messages coming
+	// through on our WebSocket connection
+	reader(ws)
+}
+
+func reader(conn *websocket.Conn) {
+	for {
+		// read in a message
+		messageType, p, err := conn.ReadMessage()
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		// print out that message for clarity
+		fmt.Println(string(p))
+
+		if err := conn.WriteMessage(messageType, p); err != nil {
+			log.Println(err)
+			return
+		}
+
 	}
 }
 

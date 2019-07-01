@@ -390,7 +390,7 @@ func (s *Stream) closeInter() {
 			if v.w.Info().IsInterval() {
 				v.w.Close(errors.New("closed"))
 				s.ws.Remove(item.Key)
-				log.Printf("[%v] player closed and remove\n", v.w.Info().UID)
+				//log.Printf("[%v] player closed and remove\n", v.w.Info().UID)
 			}
 		}
 

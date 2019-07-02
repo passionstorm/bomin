@@ -13,11 +13,38 @@
     <script src="http://bilibili.github.io/flv.js/dist/flv.js"></script>
 </head>
 <body>
-<h2>Hello World</h2>
+<h2>Hello World
+    <video id="recorder" controls autoplay></video>
 <video id="video" controls="false" autoplay></video>
 <script>
-    let socket = new WebSocket("ws://127.0.0.1:7002/ws");
 
+    navigator.getWebcam = (navigator.getUserMedia || navigator.webKitGetUserMedia || navigator.moxGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia);
+    const conf = {video: true, audio: true};
+    if (navigator.mediaDevices) {
+        navigator.mediaDevices.getUserMedia(conf).then(function (stream) {
+            console.log('navigator enabled')
+            var video = document.getElementById('recorder')
+            video.srcObject = stream
+            video.play()
+        }).catch(errBack)
+    }else{
+        navigator.getWebcam({ audio: true, video: true },
+            function (stream) {
+            console.log("ok")
+                //Display the video stream in the video object
+            },
+            errBack);
+
+    }
+
+
+    const errBack = function(err){
+        console.log(err.name + ": " + err.message);
+    }
+
+
+   // let socket = new WebSocket("ws://127.0.0.1:7002/ws");
+/*
 
     socket.onopen = () => {
         console.log("Successfully Connected");
@@ -37,7 +64,7 @@
 
     socket.onerror = error => {
         console.log("Socket Error: ", error);
-    };
+    };*/
 
     // if (flvjs.isSupported()) {
     var videoElement = document.getElementById('video');

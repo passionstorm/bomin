@@ -13,34 +13,35 @@
     <script src="http://bilibili.github.io/flv.js/dist/flv.js"></script>
 </head>
 <body>
-<h2>Hello World
+
     <video id="recorder" controls autoplay></video>
-<video id="video" controls="false" autoplay></video>
+    <video id="video" controls="false" autoplay></video>
 <script>
+    const log = function (dt) {
+        console.log(dt)
+    };
 
-    navigator.getWebcam = (navigator.getUserMedia || navigator.webKitGetUserMedia || navigator.moxGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia);
-    const conf = {video: true, audio: true};
-    if (navigator.mediaDevices) {
-        navigator.mediaDevices.getUserMedia(conf).then(function (stream) {
-            console.log('navigator enabled')
-            var video = document.getElementById('recorder')
-            video.srcObject = stream
-            video.play()
-        }).catch(errBack)
-    }else{
-        navigator.getWebcam({ audio: true, video: true },
-            function (stream) {
-            console.log("ok")
-                //Display the video stream in the video object
-            },
-            errBack);
-
-    }
+    const constraints = { audio: true, video: false };
+    log('navigator.mediaDevices...');
+    log(navigator.mediaDevices);
+    var userMedia = navigator.getUserMedia(constraints, function(){
+        log('---');
+        log('# TEST 01 # Inside Success Callback');
+    }, function(err){
+        log('---');
+        log('# TEST 01 # Inside Error Callback');
+        log(err);
+    });
 
 
-    const errBack = function(err){
-        console.log(err.name + ": " + err.message);
-    }
+    navigator.mediaDevices.getUserMedia(constraints).then(function(stream) {
+        log('---');
+        log('# TEST 02 # Inside Success Callback');
+    }).catch(function(err) {
+        log('---');
+        log('# TEST 02 # Inside Error Callback');
+        log(err);
+    });
 
 
    // let socket = new WebSocket("ws://127.0.0.1:7002/ws");

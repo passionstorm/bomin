@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"net/http"
 	"time"
 )
 
@@ -108,6 +109,13 @@ func startHTTPOpera(stream *rtmp.RtmpStream) {
 	}
 }
 
+func startHTTPWeb() {
+	fs := http.FileServer(http.Dir("demo"))
+	http.Handle("/", fs)
+	log.Println("Listening...")
+	go http.ListenAndServe(":80", nil)
+}
+
 func main() {
 	ifaces, _ := net.Interfaces()
 	for _, i := range ifaces {
@@ -147,8 +155,8 @@ func main() {
 
 	stream := rtmp.NewRtmpStream()
 	hlsServer := startHls()
-	//startHTTPFlv(stream)
-	startHTTPOpera(stream)
+	startHTTPFlv(stream)
+	startHTTPWeb()
 
 	startRtmp(stream, hlsServer)
 	//startRtmp(stream, nil)

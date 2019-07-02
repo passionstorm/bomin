@@ -7,6 +7,7 @@ import (
 	"bomin/protocol/httpopera"
 	"bomin/protocol/rtmp"
 	"flag"
+	"fmt"
 	"log"
 	"net"
 	"time"
@@ -108,6 +109,30 @@ func startHTTPOpera(stream *rtmp.RtmpStream) {
 }
 
 func main() {
+	ifaces, _ := net.Interfaces()
+	for _, i := range ifaces {
+		if i.Name != "en0" {
+			continue
+		}
+		//sfmt.Printf("Name : %v \n", i.Name)
+
+		byNameInterface, err := net.InterfaceByName(i.Name)
+
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		//fmt.Println("Interface by Name : ", byNameInterface)
+
+		addresses, err := byNameInterface.Addrs()
+
+		for k, v := range addresses {
+
+			fmt.Printf("Interface Address #%v : %v\n", k, v.String())
+		}
+		fmt.Println("------------------------------------")
+	}
+
 	defer func() {
 		if r := recover(); r != nil {
 			log.Println("bomin panic: ", r)
@@ -122,7 +147,7 @@ func main() {
 
 	stream := rtmp.NewRtmpStream()
 	hlsServer := startHls()
-	startHTTPFlv(stream)
+	//startHTTPFlv(stream)
 	startHTTPOpera(stream)
 
 	startRtmp(stream, hlsServer)

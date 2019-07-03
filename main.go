@@ -113,7 +113,12 @@ func startHTTPWeb() {
 	fs := http.FileServer(http.Dir("demo"))
 	http.Handle("/", fs)
 	log.Println("Listening...")
-	go http.ListenAndServeTLS(":8080", "cert.pem", "key.pem", nil)
+	go func() {
+		err := http.ListenAndServeTLS(":8080", "cert.pem", "key.pem", nil)
+		if err != nil {
+			log.Println(err)
+		}
+	}()
 }
 
 func main() {

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"log"
+	"syscall"
 )
 
 /*
@@ -33,9 +34,15 @@ var RtmpServercfg ServerCfg
 
 func LoadConfig(configfilename string) error {
 	log.Printf("starting load configure file(%s)......", configfilename)
-	data, err := ioutil.ReadFile(configfilename)
+	filename := configfilename
+	projectDir, found := syscall.Getenv("DIR")
+	if found {
+		filename = projectDir + "/" + configfilename
+	}
+
+	data, err := ioutil.ReadFile(filename)
 	if err != nil {
-		log.Printf("ReadFile %s error:%v", configfilename, err)
+		log.Printf("ReadFile %s error:%v", filename, err)
 		return err
 	}
 

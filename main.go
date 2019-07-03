@@ -109,12 +109,11 @@ func startHTTPOpera(stream *rtmp.RtmpStream) {
 	}
 }
 
-func startHTTPWeb() {
+func startHTTPSWeb() {
 	fs := http.FileServer(http.Dir("demo"))
 	http.Handle("/", fs)
-	log.Println("Listening...")
 	go func() {
-		err := http.ListenAndServeTLS(":8080", "/usr/local/share/ca-certificates/keyrsa.pem", "/usr/local/share/ca-certificates/public.pem", nil)
+		err := http.ListenAndServeTLS(":443", "/usr/local/share/ca-certificates/public.pem", "/usr/local/share/ca-certificates/private.key", nil)
 		if err != nil {
 			log.Println(err)
 		}
@@ -161,7 +160,7 @@ func main() {
 	stream := rtmp.NewRtmpStream()
 	hlsServer := startHls()
 	startHTTPFlv(stream)
-	startHTTPWeb()
+	startHTTPSWeb()
 
 	startRtmp(stream, hlsServer)
 	//startRtmp(stream, nil)

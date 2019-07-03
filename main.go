@@ -114,7 +114,7 @@ func startHTTPWeb() {
 	http.Handle("/", fs)
 	log.Println("Listening...")
 	go func() {
-		err := http.ListenAndServeTLS(":8080", "cert.pem", "key.pem", nil)
+		err := http.ListenAndServeTLS(":443", "cert.pem", "key.pem", nil)
 		if err != nil {
 			log.Println(err)
 		}

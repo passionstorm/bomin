@@ -13,35 +13,50 @@
     <script src="http://bilibili.github.io/flv.js/dist/flv.js"></script>
 </head>
 <body>
-
-    <video id="recorder" controls autoplay></video>
-    <video id="video" controls="false" autoplay></video>
+    <input type="file" accept="image/*" capture="camera">
+    <video style="width: 100%; height: 100%" id="recorder" controls autoplay></video>
+    <video style="display: none" id="video" controls="false" autoplay></video>
 <script>
     const log = function (dt) {
         console.log(dt)
     };
 
-    const constraints = { audio: true, video: false };
-    log('navigator.mediaDevices...');
-    log(navigator.mediaDevices);
-    var userMedia = navigator.getUserMedia(constraints, function(){
-        log('---');
-        log('# TEST 01 # Inside Success Callback');
-    }, function(err){
-        log('---');
-        log('# TEST 01 # Inside Error Callback');
-        log(err);
-    });
+    const constraints = { audio: false, video: true };
+    // console.log('navigator.mediaDevices...');
+    // console.log(navigator.mediaDevices);
+    window.onload = function(){
+        navigator.webkitGetUserMedia(constraints,
+            function (stream) {
+                var video = document.getElementById("recorder")
+                video.srcObject = stream
+                video.onloadedmetadata = function (e) {
+                    video.play()
+                }
+            },
+            function (err) {
+                console.log("err: " + err)
+            }
+        )
+    }
+
+    // var userMedia = navigator.getUserMedia(constraints, function(){
+    //     log('---');
+    //     log('# TEST 01 # Inside Success Callback');
+    // }, function(err){
+    //     log('---');
+    //     log('# TEST 01 # Inside Error Callback');
+    //     log(err);
+    // });
 
 
-    navigator.mediaDevices.getUserMedia(constraints).then(function(stream) {
-        log('---');
-        log('# TEST 02 # Inside Success Callback');
-    }).catch(function(err) {
-        log('---');
-        log('# TEST 02 # Inside Error Callback');
-        log(err);
-    });
+    // navigator.mediaDevices.getUserMedia(constraints).then(function(stream) {
+    //     console.log('---');
+    //     console.log('# TEST 02 # Inside Success Callback');
+    // }).catch(function(err) {
+    //     console.log('---');
+    //     console.log('# TEST 02 # Inside Error Callback');
+    //     console.log(err);
+    // });
 
 
    // let socket = new WebSocket("ws://127.0.0.1:7002/ws");
@@ -68,14 +83,14 @@
     };*/
 
     // if (flvjs.isSupported()) {
-    var videoElement = document.getElementById('video');
-    var flvPlayer = flvjs.createPlayer({
-        type: 'flv',
-        "isLive": true,
-        url: 'http://192.168.1.48:7001/live/movie.flv'
-    });
-    flvPlayer.attachMediaElement(videoElement);
-    flvPlayer.load();
+    // var videoElement = document.getElementById('video');
+    // var flvPlayer = flvjs.createPlayer({
+    //     type: 'flv',
+    //     "isLive": true,
+    //     url: 'http://192.168.1.48:7001/live/movie.flv'
+    // });
+    // flvPlayer.attachMediaElement(videoElement);
+    // flvPlayer.load();
     // flvPlayer.play();
     // }
 

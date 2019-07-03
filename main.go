@@ -114,7 +114,7 @@ func startHTTPWeb() {
 	http.Handle("/", fs)
 	log.Println("Listening...")
 	go func() {
-		err := http.ListenAndServeTLS(":443", "cert.pem", "key.pem", nil)
+		err := http.ListenAndServeTLS(":8080", "/usr/local/share/ca-certificates/keyrsa.pem", "/usr/local/share/ca-certificates/public.pem", nil)
 		if err != nil {
 			log.Println(err)
 		}
@@ -124,9 +124,9 @@ func startHTTPWeb() {
 func main() {
 	ifaces, _ := net.Interfaces()
 	for _, i := range ifaces {
-		if i.Name != "en0" {
-			continue
-		}
+		//if i.Name != "en0" {
+		//	continue
+		//}
 		//sfmt.Printf("Name : %v \n", i.Name)
 
 		byNameInterface, err := net.InterfaceByName(i.Name)

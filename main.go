@@ -161,7 +161,6 @@ func main() {
 	hlsServer := startHls()
 	startHTTPFlv(stream)
 	startHTTPSWeb()
-
 	startRtmp(stream, hlsServer)
 	//startRtmp(stream, nil)
 }

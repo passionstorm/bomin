@@ -1,12 +1,5 @@
 package configure
 
-import (
-	"encoding/json"
-	"io/ioutil"
-	"log"
-	"syscall"
-)
-
 /*
 {
 	[
@@ -33,26 +26,26 @@ type ServerCfg struct {
 var RtmpServercfg ServerCfg
 
 func LoadConfig(configfilename string) error {
-	log.Printf("starting load configure file(%s)......", configfilename)
-	filename := configfilename
-	projectDir, found := syscall.Getenv("DIR")
-	if found {
-		filename = projectDir + "/" + configfilename
-	}
-
-	data, err := ioutil.ReadFile(filename)
-	if err != nil {
-		log.Printf("ReadFile %s error:%v", filename, err)
-		return err
-	}
+	//log.Printf("starting load configure file(%s)......", configfilename)
+	//filename := configfilename
+	//projectDir, found := syscall.Getenv("DIR")
+	//if found {
+	//	filename = projectDir + "/" + configfilename
+	//}
+	//
+	//data, err := ioutil.ReadFile(filename)
+	//if err != nil {
+	//	log.Printf("ReadFile %s error:%v", filename, err)
+	//	return err
+	//}
 
 	//log.Printf("loadconfig: \r\n%s", string(data))
-
-	err = json.Unmarshal(data, &RtmpServercfg)
-	if err != nil {
-		log.Printf("json.Unmarshal error:%v", err)
-		return err
-	}
+	RtmpServercfg = ServerCfg{Server: []Application{{Appname: "live", Hlson: "on", Liveon: "on"}}}
+	//err = json.Unmarshal(data, &RtmpServercfg)
+	//if err != nil {
+	//	log.Printf("json.Unmarshal error:%v", err)
+	//	return err
+	//}
 	//log.Printf("get config json data:%v", RtmpServercfg)
 	return nil
 }

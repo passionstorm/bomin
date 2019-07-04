@@ -11,6 +11,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -151,7 +152,8 @@ func main() {
 			time.Sleep(1 * time.Second)
 		}
 	}()
-	//log.Println("start bomin, version", version)
+	dir, _ := os.Getwd()
+	log.Println("start bomin dir", dir)
 	err := configure.LoadConfig(*configfilename)
 	if err != nil {
 		return

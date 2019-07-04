@@ -111,7 +111,9 @@ func startHTTPOpera(stream *rtmp.RtmpStream) {
 }
 
 func startHTTPSWeb() {
-	fs := http.FileServer(http.Dir("demo"))
+	webDir := http.Dir("demo")
+	log.Println("web dir:" + webDir)
+	fs := http.FileServer(webDir)
 	http.Handle("/", fs)
 	go func() {
 		err := http.ListenAndServeTLS(":443", "/usr/local/share/ca-certificates/public.pem", "/usr/local/share/ca-certificates/private.key", nil)

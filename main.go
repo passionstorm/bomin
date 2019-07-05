@@ -116,7 +116,8 @@ func startHTTPSWeb() {
 	fs := http.FileServer(webDir)
 	http.Handle("/", fs)
 	go func() {
-		err := http.ListenAndServeTLS(":443", "/usr/local/share/ca-certificates/public.pem", "/usr/local/share/ca-certificates/private.key", nil)
+		err := http.ListenAndServe(":80", nil)
+		//err := http.ListenAndServeTLS(":443", "/usr/local/share/ca-certificates/public.pem", "/usr/local/share/ca-certificates/private.key", nil)
 		if err != nil {
 			log.Println(err)
 		}

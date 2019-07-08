@@ -22,7 +22,7 @@ function MediaStreamRecorder(mediaStream) {
 
     // void start(optional long timeSlice)
     // timestamp to fire "ondataavailable"
-    this.start = function (fps) {
+    this.start = function (timeSlice) {
         mediaRecorder = new WhammyRecorder(mediaStream);
         mediaRecorder.blobs = [];
 
@@ -36,7 +36,7 @@ function MediaStreamRecorder(mediaStream) {
 
         // Merge all data-types except "function"
         mediaRecorder = mergeProps(mediaRecorder, this);
-        mediaRecorder.start(1000 / fps);
+        mediaRecorder.start(timeSlice);
     };
 
     this.onStartedDrawingNonBlankFrames = function () {
@@ -553,6 +553,7 @@ function WhammyRecorderHelper(mediaStream, root) {
         video.play();
 
         lastTime = new Date().getTime();
+        console.log("fps = " + root.speed);
         whammy = new Whammy.Video(root.speed, root.quality);
 
         console.log('canvas resolutions', canvas.width, '*', canvas.height);
@@ -570,7 +571,7 @@ function WhammyRecorderHelper(mediaStream, root) {
         if (isPaused) {
             return;
         }
-
+        console.log(whammy.frames.length)
         if (!whammy.frames.length) {
             requestDataInvoked = false;
             return;
@@ -582,12 +583,15 @@ function WhammyRecorderHelper(mediaStream, root) {
 
         // reset the frames for the new recording
 
-        whammy.frames = dropBlackFrames(internalFrames, -1);
+        // whammy.frames = dropBlackFrames(internalFrames, -1);
 
         whammy.compile(function (whammyBlob) {
+
+            console.debug('video recorded blob size:', bytesToSize(whammyBlob.length));
             root.ondataavailable(whammyBlob);
-            console.debug('video recorded blob size:', bytesToSize(whammyBlob.size));
+
         });
+        console.log(whammy.frames.length + " frame")
         whammy.frames = [];
         requestDataInvoked = false;
     };
@@ -630,10 +634,10 @@ function WhammyRecorderHelper(mediaStream, root) {
             });
         }
 
-        if (!isOnStartedDrawingNonBlankFramesInvoked && !isBlankFrame(whammy.frames[whammy.frames.length - 1])) {
-            isOnStartedDrawingNonBlankFramesInvoked = true;
-            root.onStartedDrawingNonBlankFrames();
-        }
+        // if (!isOnStartedDrawingNonBlankFramesInvoked && !isBlankFrame(whammy.frames[whammy.frames.length - 1])) {
+        //     isOnStartedDrawingNonBlankFramesInvoked = true;
+        //     root.onStartedDrawingNonBlankFrames();
+        // }
 
         setTimeout(drawFrames, 10);
     }
@@ -820,12 +824,12 @@ function WhammyRecorderHelper(mediaStream, root) {
 var Whammy = (function () {
     // a more abstract-ish API
 
-    function WhammyVideo(duration, quality) {
+    function WhammyVideo(fps, quality) {
         this.frames = [];
-        if (!duration) {
-            duration = 1;
+        if (!fps) {
+            fps = 1;
         }
-        this.duration = 1000 / duration;
+        this.duration = 1000 / fps;
         this.quality = quality || 0.8;
     }
 
@@ -843,13 +847,15 @@ var Whammy = (function () {
         if ('canvas' in frame) { //CanvasRenderingContext2D
             frame = frame.canvas;
         }
-
         if ('toDataURL' in frame) {
-            frame = frame.toDataURL('image/webp', this.quality);
+            // frame = frame.toDataURL('image/webp', this.quality);
+            // quickly store image data so we don't block cpu. encode in compile method.
+            frame = frame.getContext('2d').getImageData(0, 0, frame.width, frame.height);
+        } else if (typeof frame != "string") {
+            throw "frame must be a a HTMLCanvasElement, a CanvasRenderingContext2D or a DataURI formatted string"
         }
-
-        if (!(/^data:image\/webp;base64,/ig).test(frame)) {
-            throw 'Input must be formatted properly as a base64 encoded DataURI of type image/webp';
+        if (typeof frame === "string" && !(/^data:image\/webp;base64,/ig).test(frame)) {
+            throw "Input must be formatted properly as a base64 encoded DataURI of type image/webp";
         }
         this.frames.push({
             image: frame,
@@ -1236,9 +1242,9 @@ var Whammy = (function () {
     // };
 
     // deferred webp encoding. Draws image data to canvas, then encodes as dataUrl
-    WhammyVideo.prototype.encodeFrames = function(callback){
+    WhammyVideo.prototype.encodeFrames = function (callback) {
 
-        if(this.frames[0].image instanceof ImageData){
+        if (this.frames[0].image instanceof ImageData) {
 
             var frames = this.frames;
             var tmpCanvas = document.createElement('canvas');
@@ -1246,20 +1252,22 @@ var Whammy = (function () {
             tmpCanvas.width = this.frames[0].image.width;
             tmpCanvas.height = this.frames[0].image.height;
 
-            var encodeFrame = function(index){
-                console.log('encodeFrame', index);
+            var encodeFrame = function (index) {
+                // console.log('encodeFrame', index);
                 var frame = frames[index];
                 tmpContext.putImageData(frame.image, 0, 0);
                 frame.image = tmpCanvas.toDataURL('image/webp', this.quality);
-                if(index < frames.length-1){
-                    setTimeout(function(){ encodeFrame(index + 1); }, 1);
-                }else{
+                if (index < frames.length - 1) {
+                    setTimeout(function () {
+                        encodeFrame(index + 1);
+                    }, 1);
+                } else {
                     callback();
                 }
             }.bind(this);
 
             encodeFrame(0);
-        }else{
+        } else {
             callback();
         }
     };
@@ -1271,6 +1279,7 @@ var Whammy = (function () {
                 webp.duration = frame.duration;
                 return webp;
             }));
+
             callback(webm);
 
         }.bind(this));

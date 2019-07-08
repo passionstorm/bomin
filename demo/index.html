@@ -33,10 +33,11 @@
     function onMediaSuccess(stream) {
         var mediaRecorder = new MediaStreamRecorder(stream);
         // sourceBuffer.addEventListener('updateend', onUpdateEnd);
-        let socket = new WebSocket("wss://192.168.1.48/ws");
+        let socket = new WebSocket("wss://192.168.1.6/ws");
         socket.onopen = () => {
             console.log("Successfully Connected");
         };
+        mediaRecorder.speed = 30;
         socket.onmessage = function (event) {
             // console.log(event);
             // sourceBuffer.append(new Uint8Array(event.data));
@@ -54,9 +55,10 @@
         };
 
         mediaRecorder.ondataavailable = function (uint8Array) {
-            socket.send(uint8Array)
+            console.log(uint8Array.length / 5000 + " kbits/s");
+            // socket.send(uint8Array)
         };
-        mediaRecorder.start(30);
+        mediaRecorder.start(5000);
     }
 
     function onMediaError(e) {

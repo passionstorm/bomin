@@ -10,69 +10,33 @@
     </style>
     <script src="whammy.js"></script>
     <script src="main.js"></script>
-    <script src="MediaStreamRecorder.js"></script>
-    <script src="http://bilibili.github.io/flv.js/dist/flv.js"></script>
+    <!-- <script src="http://bilibili.github.io/flv.js/dist/flv.js"></script> -->
 </head>
 <body>
-<video style="" src="https://sample-videos.com/video123/mp4/240/big_buck_bunny_240p_1mb.mp4" id="camera" controls
-       autoplay loop></video>
+<video id="camera" controls autoplay></video>
 <br>
+<canvas id="canvas" width="500" height="200"></canvas>
+
 <video id="result-video" autoplay></video>
 
 <script>
-    const log = function (dt) {
-        console.log(dt)
-    };
-    const constraints = {audio: false, video: true};
+    const constraints = {audio: true, video: true};
+    // navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia;
+    // window.onload = function () {
+    navigator.getUserMedia(constraints,
+        onMediaSuccess,
+        onMediaError
+    );
 
-    navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia;
+    // };
 
-    window.onload = function () {
-        // navigator.getUserMedia(constraints,
-        //     onMediaSuccess,
-        //     onMediaError
-        // )
-        console.log(document.getElementById('camera'))
-        document.getElementById('camera').addEventListener('loadeddata', function (stream) {
-            var mediaRecorder = new MediaStreamRecorder(stream);
-            // mediaRecorder.mimeType = 'video';
-            mediaRecorder.ondataavailable = function (blob) {
-                console.log(blob)
-                // POST/PUT "Blob" using FormData/XHR2
-                // var blobURL = URL.createObjectURL(blob);
-                // document.write('<a href="' + blobURL + '">' + blobURL + '</a>');
-            };
-            mediaRecorder.start(2000);
-        })
-    };
-
-    // function onMediaSuccess(stream) {
-    //     var mediaRecorder = new MediaStreamRecorder(stream);
-    //     mediaRecorder.mimeType = 'video';
-    //     mediaRecorder.ondataavailable = function (blob) {
-    //         // POST/PUT "Blob" using FormData/XHR2
-    //         var blobURL = URL.createObjectURL(blob);
-    //         document.write('<a href="' + blobURL + '">' + blobURL + '</a>');
-    //     };
-    //     mediaRecorder.start(3000);
-    // }
-    //
-    // function onMediaError(e) {
-    //     console.error('media error', e);
-    // }
-    //
-    // function showVideo(blob) {
-    //     document.getElementById('#result-video').src = URL.createObjectURL(blob);
-    // }
-
-
-    // let socket = new WebSocket("ws://127.0.0.1:7002/ws");
-    /*
-
+    function onMediaSuccess(stream) {
+        var mediaRecorder = new MediaStreamRecorder(stream);
+        // sourceBuffer.addEventListener('updateend', onUpdateEnd);
+        let socket = new WebSocket("wss://192.168.1.48/ws");
         socket.onopen = () => {
             console.log("Successfully Connected");
         };
-
         socket.onmessage = function (event) {
             // console.log(event);
             // sourceBuffer.append(new Uint8Array(event.data));
@@ -87,7 +51,24 @@
 
         socket.onerror = error => {
             console.log("Socket Error: ", error);
-        };*/
+        };
+
+        mediaRecorder.ondataavailable = function (uint8Array) {
+            socket.send(uint8Array)
+        };
+        mediaRecorder.start(30);
+    }
+
+    function onMediaError(e) {
+        console.error('media error', e);
+    }
+
+    // function showVideo(blob) {
+    //     document.getElementById('#result-video').src = URL.createObjectURL(blob);
+    // }
+
+
+
 
     // if (flvjs.isSupported()) {
     // var videoElement = document.getElementById('video');

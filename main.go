@@ -8,10 +8,10 @@ import (
 	"bomin/protocol/rtmp"
 	"flag"
 	"fmt"
+	"github.com/gorilla/websocket"
 	"log"
 	"net"
 	"net/http"
-	"os"
 	"time"
 )
 
@@ -110,13 +110,52 @@ func startHTTPOpera(stream *rtmp.RtmpStream) {
 	}
 }
 
+func reader(conn *websocket.Conn) {
+	for {
+		// read in a message
+		messageType, p, err := conn.ReadMessage()
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		// print out that message for clarity
+		fmt.Println(string(p))
+		if err := conn.WriteMessage(messageType, p); err != nil {
+			log.Println(err)
+			return
+		}
+	}
+}
+
+func connectWebsocket(w http.ResponseWriter, r *http.Request) {
+	upgrader := websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+	}
+	upgrader.CheckOrigin = func(r *http.Request) bool { return true }
+	ws, err := upgrader.Upgrade(w, r, nil)
+	// Make sure we close the connection when the function returns
+	defer ws.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+	//err = ws.WriteMessage(1, byte()[])
+	if err != nil {
+		log.Println(err)
+	}
+	// listen indefinitely for new messages coming
+	// through on our WebSocket connection
+	reader(ws)
+}
+
 func startHTTPSWeb() {
 	webDir := http.Dir("demo")
-	log.Println("web dir:" + webDir)
 	fs := http.FileServer(webDir)
 	http.Handle("/", fs)
+	http.HandleFunc("/ws", connectWebsocket)
 	go func() {
-		err := http.ListenAndServe(":80", nil)
+		//err := http.ListenAndServe(":80", nil)
+		err := http.ListenAndServeTLS(":443", "cert.pem", "key.pem", nil)
 		//err := http.ListenAndServeTLS(":443", "/usr/local/share/ca-certificates/public.pem", "/usr/local/share/ca-certificates/private.key", nil)
 		if err != nil {
 			log.Println(err)
@@ -155,8 +194,7 @@ func main() {
 			time.Sleep(1 * time.Second)
 		}
 	}()
-	dir, _ := os.Getwd()
-	log.Println("start bomin dir", dir)
+
 	err := configure.LoadConfig(*configfilename)
 	if err != nil {
 		return

@@ -31,6 +31,10 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
+type Room struct {
+
+}
+
 // Client is a middleman between the websocket connection and the hub.
 type Client struct {
 	id  string
@@ -42,7 +46,7 @@ type Client struct {
 }
 
 type Request struct{
-	EventName string `json:"eventName"`
+	EventName string `json:"event_name"`
 	Data interface{} `json:"data"`
 }
 
@@ -62,9 +66,11 @@ func (c *Client) readPump() {
 			}
 			break
 		}
-		fmt.Println(string(message))
+		//fmt.Println(string(message))
 		req := Request{}
-		fmt.Println(json.Unmarshal(message, &req))
+		_ = json.Unmarshal(message, &req)
+		tmp, _ := json.Marshal(req)
+		fmt.Println(string(tmp))
 		//message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
 
 

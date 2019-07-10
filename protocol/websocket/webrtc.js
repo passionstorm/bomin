@@ -1,11 +1,12 @@
 var WebSocketServer = require('ws').Server
 
-var iolog = function() {};
+var iolog = function () {
+};
 
 for (var i = 0; i < process.argv.length; i++) {
     var arg = process.argv[i];
     if (arg === "-debug") {
-        iolog = function(msg) {
+        iolog = function (msg) {
             console.log(msg);
         };
         console.log('Debug mode on!');
@@ -25,12 +26,12 @@ rtc.rooms = {};
 // Holds callbacks for certain events.
 rtc._events = {};
 
-rtc.on = function(eventName, callback) {
+rtc.on = function (eventName, callback) {
     rtc._events[eventName] = rtc._events[eventName] || [];
     rtc._events[eventName].push(callback);
 };
 
-rtc.fire = function(eventName, _) {
+rtc.fire = function (eventName, _) {
     var events = rtc._events[eventName];
     var args = Array.prototype.slice.call(arguments, 1);
 
@@ -43,7 +44,7 @@ rtc.fire = function(eventName, _) {
     }
 };
 
-module.exports.listen = function(server) {
+module.exports.listen = function (server) {
     var manager;
     if (typeof server === 'number') {
         manager = new WebSocketServer({
@@ -62,7 +63,7 @@ module.exports.listen = function(server) {
 
 function attachEvents(manager) {
 
-    manager.on('connection', function(socket) {
+    manager.on('connection', function (socket) {
         iolog('connect');
 
         socket.id = id();
@@ -70,12 +71,12 @@ function attachEvents(manager) {
 
         rtc.sockets.push(socket);
 
-        socket.on('message', function(msg) {
+        socket.on('message', function (msg) {
             var json = JSON.parse(msg);
             rtc.fire(json.eventName, json.data, socket);
         });
 
-        socket.on('close', function() {
+        socket.on('close', function () {
             iolog('close');
 
             // find socket to remove
@@ -100,7 +101,7 @@ function attachEvents(manager) {
                             "data": {
                                 "socketId": socket.id
                             }
-                        }), function(error) {
+                        }), function (error) {
                             if (error) {
                                 console.log(error);
                             }
@@ -124,7 +125,7 @@ function attachEvents(manager) {
     });
 
     // manages the built-in room functionality
-    rtc.on('join_room', function(data, socket) {
+    rtc.on('join_room', function (data, socket) {
         iolog('join_room');
 
         var connectionsId = [];
@@ -148,10 +149,10 @@ function attachEvents(manager) {
                 if (soc) {
                     soc.send(JSON.stringify({
                         "eventName": "new_peer_connected",
-                        "data":{
+                        "data": {
                             "socketId": socket.id
                         }
-                    }), function(error) {
+                    }), function (error) {
                         if (error) {
                             console.log(error);
                         }
@@ -166,7 +167,7 @@ function attachEvents(manager) {
                 "connections": connectionsId,
                 "you": socket.id
             }
-        }), function(error) {
+        }), function (error) {
             if (error) {
                 console.log(error);
             }
@@ -174,7 +175,7 @@ function attachEvents(manager) {
     });
 
     //Receive ICE candidates and send to the correct socket
-    rtc.on('send_ice_candidate', function(data, socket) {
+    rtc.on('send_ice_candidate', function (data, socket) {
         iolog('send_ice_candidate');
         var soc = rtc.getSocket(data.socketId);
 
@@ -186,7 +187,7 @@ function attachEvents(manager) {
                     "candidate": data.candidate,
                     "socketId": socket.id
                 }
-            }), function(error) {
+            }), function (error) {
                 if (error) {
                     console.log(error);
                 }
@@ -198,7 +199,7 @@ function attachEvents(manager) {
     });
 
     //Receive offer and send to correct socket
-    rtc.on('send_offer', function(data, socket) {
+    rtc.on('send_offer', function (data, socket) {
         iolog('send_offer');
         var soc = rtc.getSocket(data.socketId);
 
@@ -209,7 +210,7 @@ function attachEvents(manager) {
                     "sdp": data.sdp,
                     "socketId": socket.id
                 }
-            }), function(error) {
+            }), function (error) {
                 if (error) {
                     console.log(error);
                 }
@@ -220,18 +221,18 @@ function attachEvents(manager) {
     });
 
     //Receive answer and send to correct socket
-    rtc.on('send_answer', function(data, socket) {
+    rtc.on('send_answer', function (data, socket) {
         iolog('send_answer');
-        var soc = rtc.getSocket( data.socketId);
+        var soc = rtc.getSocket(data.socketId);
 
         if (soc) {
             soc.send(JSON.stringify({
                 "eventName": "receive_answer",
-                "data" : {
+                "data": {
                     "sdp": data.sdp,
                     "socketId": socket.id
                 }
-            }), function(error) {
+            }), function (error) {
                 if (error) {
                     console.log(error);
                 }
@@ -251,7 +252,7 @@ function id() {
     return (S4() + S4() + "-" + S4() + "-" + S4() + "-" + S4() + "-" + S4() + S4() + S4());
 }
 
-rtc.getSocket = function(id) {
+rtc.getSocket = function (id) {
     var connections = rtc.sockets;
     if (!connections) {
         // TODO: Or error, or customize

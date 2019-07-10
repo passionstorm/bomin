@@ -118,7 +118,7 @@ if (navigator.webkitGetUserMedia) {
         rtc._socket.onopen = function () {
 
             rtc._socket.send(JSON.stringify({
-                "eventName": "join_room",
+                "event_name": "join_room",
                 "data": {
                     "room": room
                 }
@@ -231,7 +231,7 @@ if (navigator.webkitGetUserMedia) {
         pc.onicecandidate = function (event) {
             if (event.candidate) {
                 rtc._socket.send(JSON.stringify({
-                    "eventName": "send_ice_candidate",
+                    "event_name": "send_ice_candidate",
                     "data": {
                         "label": event.candidate.sdpMLineIndex,
                         "candidate": event.candidate.candidate,
@@ -285,7 +285,7 @@ if (navigator.webkitGetUserMedia) {
             session_description.sdp = preferOpus(session_description.sdp);
             pc.setLocalDescription(session_description);
             rtc._socket.send(JSON.stringify({
-                "eventName": "send_offer",
+                "event_name": "send_offer",
                 "data": {
                     "socketId": socketId,
                     "sdp": session_description
@@ -305,7 +305,7 @@ if (navigator.webkitGetUserMedia) {
         pc.createAnswer(function (session_description) {
             pc.setLocalDescription(session_description);
             rtc._socket.send(JSON.stringify({
-                "eventName": "send_answer",
+                "event_name": "send_answer",
                 "data": {
                     "socketId": socketId,
                     "sdp": session_description

@@ -1,13 +1,21 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-
+    <meta charset="UTF-8">
+    <title>P2P - WebRTC</title>
+    <script src="webrtc.io.js"></script>
 </head>
 <body>
-
+<fieldset>
+    <legend>JOIN</legend>
+    <p>group_id:<input id="group_id"/>
+        <button onclick="join()">JOIN</button>
+        ID:<span id="id"></span></p>
+</fieldset>
 <fieldset>
     <legend>PUBLISH</legend>
     <p>
-        <button onclick="start()">start</button>
+        <button onclick="publishCAM()">cam</button>
         <button onclick="unPublish()">unpublish</button>
     </p>
     <p>
@@ -17,46 +25,83 @@
         <button onclick="sendDC2()">Send DC2</button>
     </p>
 </fieldset>
+<fieldset>
+    <legend>RD</legend>
+    <p>
+        <button onclick="controllee()">±»¿Ø¶Ë</button>
+        <button onclick="controller()">¿ØÖÆ¶Ë</button>
+    </p>
+</fieldset>
 local:
 <p>
-    <video id="lv" autoplay></video>
+    <video id="local" autoplay></video>
 </p>
 remote:
 <p>
-    <video id="v" autoplay></video>
+    <video id="remote" autoplay></video>
 </p>
+<fieldset>
+    <legend>LOG</legend>
+    <p id="console" style="width:100%;font-size:14px;"></p>
+</fieldset>
+<div id="listener"></div>
+
 <script>
-    const signaling = new SignalingChannel();
-    const configuration = {iceServers: [{urls: 'stuns:stun.example.org'}]};
-    const audio = null;
-    const audioSendTrack = null;
-    const video = null;
-    const videoSendTrack = null;
-    const started = false;
-    let pc;
+    var cameraStream;
+    rtc.connect('wss://192.168.1.48/ws');
+    function join() {
+    }
+    function log(content) {
+        document.getElementById("console").innerHTML += content + '<br/>';
+    }
+    function publishCAM() {
+        rtc.createStream({video: true, audio: false}, function (stream) {
+            rtc.publishStream(stream, 'local');
+        });
+    }
+    function unPublish() {
+        rtc.unPublishStream();
+    }
 
-    async function start() {
-        pc = new RTCPeerConnection(configuration)
-        // let the "negotiationneeded" event trigger offer generation
-        pc.onnegotiationneeded = async () => {
-            try{
-                await pc.setLocalDescription(await pc.createOffer());
-                signaling.send(JSON.stringify({desc: pc.localDescription}));
+    var channel, channel2;
 
-            }catch (err) {
-                console.error(err);
-            }
-        }
-
-        try{
-            navigator.mediaDevices.getUserMedia({audio: true, video: true});
-
-        }catch (err) {
-            console.error(err);
+    function createDC() {
+        channel = client.createDataChannel("Test1");
+        channel.onmessage = function (data) {
+            alert(data)
         }
     }
 
+    function sendDC() {
+        channel.send("test1");
+    }
+
+    function createDC2() {
+        channel2 = client.createDataChannel("Test2");
+        channel2.onmessage = function (data) {
+            alert(data)
+        }
+    }
+
+    function sendDC2() {
+        channel2.send("test2");
+    }
+
+    function controllee() {
+        publishScreen();
+        dc_rd = client.createDataChannel("RD");
+        dc_rd.onmessage = function (data) {
+            post(data)
+        }
+    }
+
+    var dc_rd;
+
+    function controller() {
+        init_controller(document.getElementById('v'));
+    }
 
 </script>
+
 </body>
 </html>

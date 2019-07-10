@@ -6,9 +6,9 @@ import (
 	"bomin/protocol/httpflv"
 	"bomin/protocol/httpopera"
 	"bomin/protocol/rtmp"
+	"bomin/protocol/websocket"
 	"flag"
 	"fmt"
-	"github.com/gorilla/websocket"
 	"log"
 	"net"
 	"net/http"
@@ -22,6 +22,7 @@ var (
 	hlsAddr        = flag.String("hls-addr", ":7002", "HLS server listen address")
 	operaAddr      = flag.String("manage-addr", ":8090", "HTTP manage interface server listen address")
 	configfilename = flag.String("cfgfile", "livego.cfg", "live configure filename")
+	webAddr = flag.String("addr", ":443", "http service address")
 )
 
 func init() {
@@ -110,49 +111,18 @@ func startHTTPOpera(stream *rtmp.RtmpStream) {
 	}
 }
 
-func reader(conn *websocket.Conn) {
-	for {
-		// read in a message
-		_, p, err := conn.ReadMessage()
-		if err != nil {
-			log.Println(err)
-			return
-		}
-		// print out that message for clarity
-		fmt.Println(string(p))
-		//if err := conn.WriteMessage(messageType, p); err != nil {
-		//	log.Println(err)
-		//	return
-		//}
-	}
-}
 
-func connectWebsocket(w http.ResponseWriter, r *http.Request) {
-	upgrader := websocket.Upgrader{
-		ReadBufferSize:  1024,
-		WriteBufferSize: 1024,
-	}
-	upgrader.CheckOrigin = func(r *http.Request) bool { return true }
-	ws, err := upgrader.Upgrade(w, r, nil)
-	// Make sure we close the connection when the function returns
-	defer ws.Close()
-	if err != nil {
-		log.Fatal(err)
-	}
-	//err = ws.WriteMessage(1, byte()[])
-	if err != nil {
-		log.Println(err)
-	}
-	// listen indefinitely for new messages coming
-	// through on our WebSocket connection
-	reader(ws)
-}
 
 func startHTTPSWeb() {
-	webDir := http.Dir("demo")
+	//webDir := http.Dir("demo")
+	webDir := http.Dir("demo_p2p")
 	fs := http.FileServer(webDir)
+	hub := websocket.NewHub()
+	go hub.Run()
 	http.Handle("/", fs)
-	http.HandleFunc("/ws", connectWebsocket)
+	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+		websocket.ServeWs(hub, w, r)
+	})
 	go func() {
 		//err := http.ListenAndServe(":80", nil)
 		err := http.ListenAndServeTLS(":443", "cert.pem", "key.pem", nil)
@@ -201,9 +171,9 @@ func main() {
 	}
 
 	stream := rtmp.NewRtmpStream()
-	hlsServer := startHls()
-	startHTTPFlv(stream)
+	//hlsServer := startHls()
+	//startHTTPFlv(stream)
 	startHTTPSWeb()
-	startRtmp(stream, hlsServer)
-	//startRtmp(stream, nil)
+	//startRtmp(stream, hlsServer)
+	startRtmp(stream, nil)
 }

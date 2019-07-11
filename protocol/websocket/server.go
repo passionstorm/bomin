@@ -24,6 +24,7 @@ const (
 var (
 	newline = []byte{'\n'}
 	space   = []byte{' '}
+	rooms   map[string]*Room
 )
 
 var upgrader = websocket.Upgrader{
@@ -32,7 +33,8 @@ var upgrader = websocket.Upgrader{
 }
 
 type Room struct {
-
+	Name    string
+	Clients []*Client
 }
 
 // Client is a middleman between the websocket connection and the hub.
@@ -45,9 +47,9 @@ type Client struct {
 	send chan []byte
 }
 
-type Request struct{
-	EventName string `json:"event_name"`
-	Data interface{} `json:"data"`
+type Request struct {
+	EventName string      `json:"event_name"`
+	Data      map[string]string `json:"data"`
 }
 
 func (c *Client) readPump() {
@@ -66,16 +68,25 @@ func (c *Client) readPump() {
 			}
 			break
 		}
-		//fmt.Println(string(message))
+		fmt.Println(string(message))
 		req := Request{}
 		_ = json.Unmarshal(message, &req)
-		tmp, _ := json.Marshal(req)
-		fmt.Println(string(tmp))
+
+		if req.EventName == "join_room" {
+			if req.Data["room"] == "" { //create new room
+				newRoom := &Room{Name: ""}
+				newRoom.Clients = make([]*Client, 1)
+				newRoom.Clients = append(newRoom.Clients, c)
+			}else {
+
+			}
+		}
+
+		//tmp, _ := json.Marshal(req)
+		//fmt.Println(string(tmp))
 		//message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
 
-
-
-		//c.hub.broadcast <- message
+		c.hub.broadcast <- message
 	}
 }
 
@@ -139,6 +150,6 @@ func ServeWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	client.hub.register <- client
 	// Allow collection of memory referenced by the caller by doing all work in
 	// new goroutines.
-	//go client.writePump()
+	go client.writePump()
 	go client.readPump()
 }

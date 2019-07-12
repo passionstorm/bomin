@@ -24,7 +24,7 @@ const (
 var (
 	newline = []byte{'\n'}
 	space   = []byte{' '}
-	rooms   map[string]*Room
+	rooms  []*Room
 )
 
 var upgrader = websocket.Upgrader{
@@ -46,6 +46,15 @@ type Client struct {
 	// Buffered channel of outbound messages.
 	send chan []byte
 }
+
+func (c *Client) sendMessage(msg []byte)  {
+	w, err := c.conn.NextWriter(websocket.TextMessage)
+	if err != nil {
+		return
+	}
+	w.Write(msg)
+}
+
 
 type Request struct {
 	EventName string      `json:"event_name"`
@@ -71,22 +80,23 @@ func (c *Client) readPump() {
 		fmt.Println(string(message))
 		req := Request{}
 		_ = json.Unmarshal(message, &req)
-
+		var room *Room
 		if req.EventName == "join_room" {
 			if req.Data["room"] == "" { //create new room
-				newRoom := &Room{Name: ""}
-				newRoom.Clients = make([]*Client, 1)
-				newRoom.Clients = append(newRoom.Clients, c)
+				room = &Room{Name: "room-" + c.id}
+				room.Clients = make([]*Client, 1)
+				room.Clients = append(room.Clients, c)
+				rooms = append(rooms, room)
 			}else {
 
 			}
 		}
+		msgResponse :=  `[]`
 
-		//tmp, _ := json.Marshal(req)
-		//fmt.Println(string(tmp))
-		//message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
-
-		c.hub.broadcast <- message
+		for _, v := range room.Clients{
+			b, _ := json.Marshal(msgResponse)
+			v.sendMessage(b)
+		}
 	}
 }
 

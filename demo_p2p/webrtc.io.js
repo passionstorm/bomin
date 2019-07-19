@@ -125,8 +125,9 @@ if (navigator.webkitGetUserMedia) {
             }));
 
             rtc._socket.onmessage = function (msg) {
+                console.log('received: %s', msg.data);
                 var json = JSON.parse(msg.data);
-                rtc.fire(json.eventName, json.data);
+                rtc.fire(json.event_name, json.data);
             };
 
             rtc._socket.onerror = function (err) {
@@ -135,6 +136,7 @@ if (navigator.webkitGetUserMedia) {
             };
 
             rtc._socket.onclose = function (data) {
+                console.log('close socket');
                 var id = rtc._socket.id;
                 //TODO create disconnect stream
                 rtc.fire('disconnect stream', id);
@@ -146,6 +148,7 @@ if (navigator.webkitGetUserMedia) {
             };
 
             rtc.on('get_peers', function (data) {
+                console.log("get_peers start...");
                 rtc.connections = data.connections;
                 rtc._me = data.you;
                 if (rtc.offerSent) { // 'ready' was fired before 'get_peers'
@@ -166,6 +169,7 @@ if (navigator.webkitGetUserMedia) {
             });
 
             rtc.on('new_peer_connected', function (data) {
+                console.log("aaa");
                 var id = data.socketId;
                 rtc.connections.push(id);
                 delete rtc.offerSent;
@@ -223,12 +227,13 @@ if (navigator.webkitGetUserMedia) {
     };
 
     rtc.createPeerConnection = function (id) {
-
         var config = rtc.pc_constraints;
+        console.log('create peer connection');
         if (rtc.dataChannelSupport) config = rtc.dataChannelConfig;
 
         var pc = rtc.peerConnections[id] = new PeerConnection(rtc.SERVER(), config);
         pc.onicecandidate = function (event) {
+            console.log("onicecandidate %s", event);
             if (event.candidate) {
                 rtc._socket.send(JSON.stringify({
                     "event_name": "send_ice_candidate",
@@ -268,7 +273,7 @@ if (navigator.webkitGetUserMedia) {
         var constraints = {
             "optional": [],
             "mandatory": {
-                "MozDontOfferDataChannel": true
+                // "MozDontOfferDataChannel": true
             }
         };
         // temporary measure to remove Moz* constraints in Chrome
@@ -335,21 +340,42 @@ if (navigator.webkitGetUserMedia) {
             audio: !!opt.audio
         };
 
-        if (getUserMedia) {
-            rtc.numStreams++;
-            getUserMedia.call(navigator, options, function (stream) {
-                rtc.streams.push(stream);
-                rtc.initializedStreams++;
-                onSuccess(stream);
-                if (rtc.initializedStreams === rtc.numStreams) {
-                    rtc.fire('ready');
-                }
-            }, function (error) {
-                alert("Could not connect stream.");
-                onFail(error);
-            });
-        } else {
-            alert('webRTC is not yet supported in this browser.');
+        // if (getUserMedia) {
+        //     rtc.numStreams++;
+        //     getUserMedia.call(navigator, options, function (stream) {
+        //         rtc.streams.push(stream);
+        //         rtc.initializedStreams++;
+        //         onSuccess(stream);
+        //         if (rtc.initializedStreams === rtc.numStreams) {
+        //             rtc.fire('ready');
+        //         }
+        //     }, function (error) {
+        //         alert("Could not connect stream.");
+        //         onFail(error);
+        //     });
+        // } else {
+        //     alert('webRTC is not yet supported in this browser.');
+        // }
+        const videoLocal = document.getElementById('source');
+        var canvas = document.getElementById('canvas');
+        var context = canvas.getContext('2d');
+
+        setTimeout(function () {    //  call a 3s setTimeout when the loop is called
+            for(var i = 0; ; i++){
+                setTimeout(function () {
+                    context.drawImage(videoLocal, 0, 0, canvas.width, canvas.height);
+                }, 1000);
+            }
+        }, 9999999999999);
+
+
+        var stream = canvas.captureStream(30);
+        rtc.numStreams++;
+        rtc.streams.push(stream);
+        rtc.initializedStreams++;
+        onSuccess(stream);
+        if (rtc.initializedStreams === rtc.numStreams) {
+            rtc.fire('ready');
         }
     };
 
@@ -363,7 +389,7 @@ if (navigator.webkitGetUserMedia) {
     };
 
     rtc.publishStream = function (stream, element) {
-        if (typeof (element) === "string")  {
+        if (typeof (element) === "string") {
             element = document.getElementById(element);
         }
         rtc.mediaStream = stream;
@@ -371,8 +397,8 @@ if (navigator.webkitGetUserMedia) {
         element.play()
     };
 
-    rtc.unPublishStream = function(){
-        if(typeof rtc.mediaStream !== undefined){
+    rtc.unPublishStream = function () {
+        if (typeof rtc.mediaStream !== undefined) {
             rtc.mediaStream.getTracks().forEach(track => track.stop());
             rtc.mediaStream = undefined;
         }
@@ -459,8 +485,8 @@ if (navigator.webkitGetUserMedia) {
             rtc.createDataChannel(connection);
     };
 
-
     rtc.on('ready', function () {
+        console.log('rtc ready');
         rtc.createPeerConnections();
         rtc.addStreams();
         rtc.addDataChannels();

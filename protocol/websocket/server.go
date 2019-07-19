@@ -24,7 +24,7 @@ const (
 var (
 	newline = []byte{'\n'}
 	space   = []byte{' '}
-	rooms  []*Room
+	rooms   []*Room
 )
 
 var upgrader = websocket.Upgrader{
@@ -33,6 +33,7 @@ var upgrader = websocket.Upgrader{
 }
 
 type Room struct {
+	Admin   string
 	Name    string
 	Clients []*Client
 }
@@ -47,17 +48,20 @@ type Client struct {
 	send chan []byte
 }
 
-func (c *Client) sendMessage(msg []byte)  {
+func (c *Client) sendMessage(msg []byte) {
 	w, err := c.conn.NextWriter(websocket.TextMessage)
 	if err != nil {
+		fmt.Println(err)
 		return
 	}
 	w.Write(msg)
+	if err := w.Close(); err != nil {
+		return
+	}
 }
 
-
 type Request struct {
-	EventName string      `json:"event_name"`
+	EventName string            `json:"event_name"`
 	Data      map[string]string `json:"data"`
 }
 
@@ -82,22 +86,63 @@ func (c *Client) readPump() {
 		_ = json.Unmarshal(message, &req)
 		var room *Room
 		if req.EventName == "join_room" {
-			if req.Data["room"] == "" { //create new room
-				room = &Room{Name: "room-" + c.id}
-				room.Clients = make([]*Client, 1)
+			//room = getRoom(req.Data["room"])
+			room = getRoom("room")
+			if room == nil {
+				room = &Room{Name: "room"}
 				room.Clients = append(room.Clients, c)
 				rooms = append(rooms, room)
-			}else {
-
+			} else {
+				room.Clients = append(room.Clients, c)
 			}
 		}
-		msgResponse :=  `[]`
+		if room != nil {
+			// inform the peers that they have a new peer
+			msgNewPeerConnected := map[string]interface{}{
+				"event_name": "new_peer_connected",
+				"data": map[string]interface{}{
+					"socketId": c.id,
+				},
+			}
+			msg1, _ := json.Marshal(msgNewPeerConnected)
+			for _, c := range room.Clients {
+				if c != nil {
+					c.sendMessage(msg1)
+				}
+			}
+		}
 
-		for _, v := range room.Clients{
-			b, _ := json.Marshal(msgResponse)
-			v.sendMessage(b)
+		connections := make([]string, 0)
+		for _, c := range room.Clients {
+			if c != nil {
+				if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+					continue
+				}
+				connections = append(connections, c.id)
+			}
+		}
+		// send new peer a list of all prior peers
+		msgGetPeers := map[string]interface{}{
+			"event_name": "get_peers",
+			"data": map[string]interface{}{
+				"connections": connections,
+				"you":         c.id,
+			},
+		}
+
+		msg2, _ := json.Marshal(msgGetPeers)
+		c.sendMessage(msg2)
+	}
+}
+
+func getRoom(name string) *Room {
+	for _, r := range rooms {
+		if r.Name == name {
+			return r
 		}
 	}
+
+	return nil
 }
 
 // writePump pumps messages from the hub to the websocket connection.

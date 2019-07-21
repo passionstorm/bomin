@@ -5,10 +5,8 @@ var nativeRTCIceCandidate = window.RTCIceCandidate;
 var nativeRTCSessionDescription = window.RTCSessionDescription; // order is very important: "RTCSessionDescription" defined in Nighly but useless
 
 var sdpConstraints = {
-    'mandatory': {
-        'OfferToReceiveAudio': true,
-        'OfferToReceiveVideo': true
-    }
+        'OfferToReceiveAudio': 1,
+        'OfferToReceiveVideo': 1
 };
 
 if (navigator.webkitGetUserMedia) {
@@ -169,7 +167,7 @@ if (navigator.webkitGetUserMedia) {
             });
 
             rtc.on('new_peer_connected', function (data) {
-                console.log("aaa");
+                console.log("new_peer_connected " + data.socketId);
                 var id = data.socketId;
                 rtc.connections.push(id);
                 delete rtc.offerSent;
@@ -268,35 +266,19 @@ if (navigator.webkitGetUserMedia) {
     };
 
     rtc.sendOffer = function (socketId) {
+        console.log('send offer to: ' + socketId);
         var pc = rtc.peerConnections[socketId];
-
-        var constraints = {
-            "optional": [],
-            "mandatory": {
-                // "MozDontOfferDataChannel": true
-            }
-        };
-        // temporary measure to remove Moz* constraints in Chrome
-        if (navigator.webkitGetUserMedia) {
-            for (var prop in constraints.mandatory) {
-                if (prop.indexOf("Moz") != -1) {
-                    delete constraints.mandatory[prop];
-                }
-            }
-        }
-        constraints = mergeConstraints(constraints, sdpConstraints);
-
-        pc.createOffer(function (session_description) {
-            session_description.sdp = preferOpus(session_description.sdp);
-            pc.setLocalDescription(session_description);
+        pc.createOffer(sdpConstraints).then(d => {
+            d.sdp = preferOpus(d.sdp);
+            pc.setLocalDescription(d);
             rtc._socket.send(JSON.stringify({
                 "event_name": "send_offer",
                 "data": {
                     "socketId": socketId,
-                    "sdp": session_description
+                    "sdp": d
                 }
             }));
-        }, null, sdpConstraints);
+        }, null);
     };
 
     rtc.receiveOffer = function (socketId, sdp) {

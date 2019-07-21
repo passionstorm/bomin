@@ -18,7 +18,7 @@ const (
 	// Send pings to peer with this period. Must be less than pongWait.
 	pingPeriod = (pongWait * 9) / 10
 	// Maximum message size allowed from peer.
-	maxMessageSize = 512
+	maxMessageSize = 65535
 )
 
 var (
@@ -38,26 +38,31 @@ type Room struct {
 	Clients []*Client
 }
 
+func (r *Room) removeClient(id string) {
+	for i, client := range r.Clients {
+		if client.id == id {
+			r.Clients[i] = r.Clients[len(r.Clients)-1]
+			r.Clients[len(r.Clients)-1] = nil
+			r.Clients = r.Clients[:len(r.Clients)-1]
+			return
+		}
+	}
+}
+
 // Client is a middleman between the websocket connection and the hub.
 type Client struct {
-	id  string
-	hub *Hub
+	id   string
+	hub  *Hub
+	Room *Room
 	// The websocket connection.
 	conn *websocket.Conn
 	// Buffered channel of outbound messages.
 	send chan []byte
 }
 
-func (c *Client) sendMessage(msg []byte) {
-	w, err := c.conn.NextWriter(websocket.TextMessage)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	w.Write(msg)
-	if err := w.Close(); err != nil {
-		return
-	}
+func remove(s []int, i int) []int {
+	s[len(s)-1], s[i] = s[i], s[len(s)-1]
+	return s[:len(s)-1]
 }
 
 type Request struct {
@@ -84,55 +89,65 @@ func (c *Client) readPump() {
 		fmt.Println(string(message))
 		req := Request{}
 		_ = json.Unmarshal(message, &req)
-		var room *Room
-		if req.EventName == "join_room" {
-			//room = getRoom(req.Data["room"])
-			room = getRoom("room")
-			if room == nil {
-				room = &Room{Name: "room"}
-				room.Clients = append(room.Clients, c)
-				rooms = append(rooms, room)
-			} else {
-				room.Clients = append(room.Clients, c)
-			}
+		switch event := req.EventName; event {
+		case "join_room":
+			joinRoom(c)
+			return
+		case "send_offer":
 		}
-		if room != nil {
-			// inform the peers that they have a new peer
-			msgNewPeerConnected := map[string]interface{}{
-				"event_name": "new_peer_connected",
-				"data": map[string]interface{}{
-					"socketId": c.id,
-				},
-			}
-			msg1, _ := json.Marshal(msgNewPeerConnected)
-			for _, c := range room.Clients {
-				if c != nil {
-					c.sendMessage(msg1)
-				}
-			}
-		}
+	}
+}
 
-		connections := make([]string, 0)
-		for _, c := range room.Clients {
-			if c != nil {
-				if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
-					continue
-				}
-				connections = append(connections, c.id)
-			}
-		}
-		// send new peer a list of all prior peers
-		msgGetPeers := map[string]interface{}{
-			"event_name": "get_peers",
+func sendOffer() {
+
+}
+
+func joinRoom(c *Client) {
+	var room *Room
+	room = getRoom("room")
+	c.Room = room
+	if room == nil {
+		room = &Room{Name: "room"}
+		room.Clients = append(room.Clients, c)
+		rooms = append(rooms, room)
+	} else {
+		room.Clients = append(room.Clients, c)
+	}
+	connections := make([]string, 0)
+	if room != nil {
+		// inform the peers that they have a new peer
+		msgNewPeerConnected := map[string]interface{}{
+			"event_name": "new_peer_connected",
 			"data": map[string]interface{}{
-				"connections": connections,
-				"you":         c.id,
+				"socketId": c.id,
 			},
 		}
+		msg1, _ := json.Marshal(msgNewPeerConnected)
+		for _, i := range room.Clients {
+			if i != nil {
+				if i.id == c.id {
+					continue
+				}
 
-		msg2, _ := json.Marshal(msgGetPeers)
-		c.sendMessage(msg2)
+				if err := i.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+					continue
+				}
+				connections = append(connections, i.id)
+				i.send <- msg1
+			}
+		}
 	}
+
+	// send new peer a list of all prior peers
+	msgGetPeers := map[string]interface{}{
+		"event_name": "get_peers",
+		"data": map[string]interface{}{
+			"connections": connections,
+			"you":         c.id,
+		},
+	}
+	msg2, _ := json.Marshal(msgGetPeers)
+	c.send <- msg2
 }
 
 func getRoom(name string) *Room {

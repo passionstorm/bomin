@@ -12,7 +12,7 @@ import (
 
 const (
 	// Time allowed to write a message to the peer.
-	writeWait = 10 * time.Second
+	writeWait = 60 * time.Second
 	// Time allowed to read the next pong message from the peer.
 	pongWait = 60 * time.Second
 	// Send pings to peer with this period. Must be less than pongWait.
@@ -65,9 +65,28 @@ func remove(s []int, i int) []int {
 	return s[:len(s)-1]
 }
 
-type Request struct {
-	EventName string            `json:"event_name"`
-	Data      map[string]string `json:"data"`
+type RequestData struct {
+	Sdp       map[string]string `json:"sdp"`
+	Label     int               `json:"label"`
+	SocketId  string            `json:"socketId"`
+	Candidate interface{}       `json:"candidate"`
+}
+
+type Signal struct {
+	EventName string      `json:"event_name"`
+	Data      RequestData `json:"data"`
+}
+
+func (c *Client) sendMessage(msg []byte) {
+	w, err := c.conn.NextWriter(websocket.TextMessage)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	w.Write(msg)
+	if err := w.Close(); err != nil {
+		return
+	}
 }
 
 func (c *Client) readPump() {
@@ -87,22 +106,87 @@ func (c *Client) readPump() {
 			break
 		}
 		fmt.Println(string(message))
-		req := Request{}
-		_ = json.Unmarshal(message, &req)
-		switch event := req.EventName; event {
+		signal := Signal{}
+		_ = json.Unmarshal(message, &signal)
+		switch event := signal.EventName; event {
 		case "join_room":
-			joinRoom(c)
-			return
+			c.joinRoom()
+			break
 		case "send_offer":
+			var socketId = signal.Data.SocketId
+			var sdp = signal.Data.Sdp
+			c.sendOffer(socketId, sdp)
+			break
+		case "send_answer":
+			var socketId = signal.Data.SocketId
+			var sdp = signal.Data.Sdp
+			c.sendAnswer(socketId, sdp)
+			break
+		case "send_ice_candidate":
+			c.sendIceCandidate(signal.Data.SocketId, signal.Data.Label, signal.Data.Candidate)
+			break
 		}
 	}
 }
 
-func sendOffer() {
-
+func (c *Client) getClientById(id string) *Client {
+	for k := range c.hub.clients {
+		if k.id == id {
+			return k
+		}
+	}
+	return nil
 }
 
-func joinRoom(c *Client) {
+func (c *Client) sendIceCandidate(socketId string, label int, candidate interface{}) {
+	destination := c.getClientById(socketId)
+	if destination != nil {
+		m := map[string]interface{}{
+			"event_name": "receive_ice_candidate",
+			"data": map[string]interface{}{
+				"label":     label,
+				"candidate": candidate,
+				"socketId":  socketId,
+			},
+		}
+
+		msg, _ := json.Marshal(m)
+		//fmt.Println(string(msg))
+		destination.sendMessage(msg)
+	}
+}
+
+func (c *Client) sendAnswer(socketId string, sdp map[string]string) {
+	destination := c.getClientById(socketId)
+	if destination != nil {
+		m := map[string]interface{}{
+			"event_name": "receive_answer",
+			"data": map[string]interface{}{
+				"sdp":      sdp,
+				"socketId": socketId,
+			},
+		}
+		msg, _ := json.Marshal(m)
+		destination.send <- msg
+	}
+}
+
+func (c *Client) sendOffer(socketId string, sdp map[string]string) {
+	destination := c.getClientById(socketId)
+	if destination != nil {
+		m := map[string]interface{}{
+			"event_name": "receive_offer",
+			"data": map[string]interface{}{
+				"sdp":      sdp,
+				"socketId": socketId,
+			},
+		}
+		msg, _ := json.Marshal(m)
+		destination.send <- msg
+	}
+}
+
+func (c *Client) joinRoom() {
 	var room *Room
 	room = getRoom("room")
 	c.Room = room
@@ -188,11 +272,11 @@ func (c *Client) writePump() {
 			w.Write(message)
 
 			// Add queued chat messages to the current websocket message.
-			n := len(c.send)
-			for i := 0; i < n; i++ {
-				w.Write(newline)
-				w.Write(<-c.send)
-			}
+			//n := len(c.send)
+			//for i := 0; i < n; i++ {
+			//	w.Write(newline)
+			//	w.Write(<-c.send)
+			//}
 
 			if err := w.Close(); err != nil {
 				return

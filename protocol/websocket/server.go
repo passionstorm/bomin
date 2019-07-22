@@ -55,7 +55,7 @@ type Client struct {
 	hub  *Hub
 	Room *Room
 	// The websocket connection.
-	conn *websocket.Conn
+	conn          *websocket.Conn
 	// Buffered channel of outbound messages.
 	send chan []byte
 }
@@ -113,14 +113,14 @@ func (c *Client) readPump() {
 			c.joinRoom()
 			break
 		case "send_offer":
-			var socketId = signal.Data.SocketId
+			var targetId = signal.Data.SocketId
 			var sdp = signal.Data.Sdp
-			c.sendOffer(socketId, sdp)
+			c.sendOffer(c.id, targetId, sdp)
 			break
 		case "send_answer":
-			var socketId = signal.Data.SocketId
+			var targetId = signal.Data.SocketId
 			var sdp = signal.Data.Sdp
-			c.sendAnswer(socketId, sdp)
+			c.sendAnswer(targetId, sdp)
 			break
 		case "send_ice_candidate":
 			c.sendIceCandidate(signal.Data.SocketId, signal.Data.Label, signal.Data.Candidate)
@@ -156,33 +156,33 @@ func (c *Client) sendIceCandidate(socketId string, label int, candidate interfac
 	}
 }
 
-func (c *Client) sendAnswer(socketId string, sdp map[string]string) {
-	destination := c.getClientById(socketId)
-	if destination != nil {
+func (c *Client) sendAnswer(targetId string, sdp map[string]string) {
+	target := c.getClientById(targetId)
+	if target != nil{
 		m := map[string]interface{}{
 			"event_name": "receive_answer",
 			"data": map[string]interface{}{
 				"sdp":      sdp,
-				"socketId": socketId,
+				"socketId": targetId,
 			},
 		}
 		msg, _ := json.Marshal(m)
-		destination.send <- msg
+		target.send <- msg
 	}
 }
 
-func (c *Client) sendOffer(socketId string, sdp map[string]string) {
-	destination := c.getClientById(socketId)
-	if destination != nil {
+func (c *Client) sendOffer(sourceId string, targetId string, sdp map[string]string) {
+	target := c.getClientById(targetId)
+	if target != nil {
 		m := map[string]interface{}{
 			"event_name": "receive_offer",
 			"data": map[string]interface{}{
 				"sdp":      sdp,
-				"socketId": socketId,
+				"socketId": sourceId,
 			},
 		}
 		msg, _ := json.Marshal(m)
-		destination.send <- msg
+		target.send <- msg
 	}
 }
 

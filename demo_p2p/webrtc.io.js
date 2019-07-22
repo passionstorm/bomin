@@ -156,6 +156,7 @@ if (navigator.webkitGetUserMedia) {
                     rtc.addDataChannels();
                     rtc.sendOffers();
                 }
+
                 rtc.peerConnections[rtc._me] = new PeerConnection(rtc.SERVER());
                 // fire connections event and pass peers
                 rtc.fire('connections', rtc.connections);
@@ -201,8 +202,9 @@ if (navigator.webkitGetUserMedia) {
             });
 
             rtc.on('receive_answer', function (data) {
-                rtc.receiveAnswer(data.socketId, data.sdp);
-                rtc.fire('receive answer', data);
+                var pc = rtc.peerConnections[rtc._me];
+                pc.setRemoteDescription(new nativeRTCSessionDescription(data.sdp));
+                // rtc.fire('receive answer', data);
             });
 
             rtc.fire('connect');
@@ -286,14 +288,11 @@ if (navigator.webkitGetUserMedia) {
         }, null);
     };
 
-    rtc.receiveOffer = function (socketId, sdp) {
-        var pc = rtc.peerConnections[socketId];
-        rtc.sendAnswer(socketId, sdp);
-    };
-
-    rtc.sendAnswer = function (socketId, offerSDP) {
-        var pc = rtc.peerConnections[socketId];
+    rtc.receiveOffer = function (socketId, offerSDP) {
+        var pc = rtc.peerConnections[rtc._me];
         var rtcSession = new RTCSessionDescription(offerSDP);
+
+        //send answer
         pc.setRemoteDescription(rtcSession).then(
             () => {
                 pc.createAnswer(sdpConstraints).then(
@@ -317,12 +316,6 @@ if (navigator.webkitGetUserMedia) {
             }
         );
     };
-
-    rtc.receiveAnswer = function (socketId, sdp) {
-        var pc = rtc.peerConnections[socketId];
-        pc.setRemoteDescription(new nativeRTCSessionDescription(sdp));
-    };
-
 
     rtc.createStream = function (opt, onSuccess, onFail) {
         var options;

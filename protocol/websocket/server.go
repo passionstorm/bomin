@@ -55,7 +55,7 @@ type Client struct {
 	hub  *Hub
 	Room *Room
 	// The websocket connection.
-	conn          *websocket.Conn
+	conn *websocket.Conn
 	// Buffered channel of outbound messages.
 	send chan []byte
 }
@@ -65,7 +65,7 @@ func remove(s []int, i int) []int {
 	return s[:len(s)-1]
 }
 
-type RequestData struct {
+type SignalDetail struct {
 	Sdp       map[string]string `json:"sdp"`
 	Label     int               `json:"label"`
 	SocketId  string            `json:"socketId"`
@@ -73,8 +73,8 @@ type RequestData struct {
 }
 
 type Signal struct {
-	EventName string      `json:"event_name"`
-	Data      RequestData `json:"data"`
+	EventName string       `json:"event_name"`
+	Data      SignalDetail `json:"data"`
 }
 
 func (c *Client) sendMessage(msg []byte) {
@@ -115,7 +115,7 @@ func (c *Client) readPump() {
 		case "send_offer":
 			var targetId = signal.Data.SocketId
 			var sdp = signal.Data.Sdp
-			c.sendOffer(c.id, targetId, sdp)
+			c.sendOffer(targetId, sdp)
 			break
 		case "send_answer":
 			var targetId = signal.Data.SocketId
@@ -138,32 +138,34 @@ func (c *Client) getClientById(id string) *Client {
 	return nil
 }
 
-func (c *Client) sendIceCandidate(socketId string, label int, candidate interface{}) {
-	destination := c.getClientById(socketId)
-	if destination != nil {
+func (c *Client) sendIceCandidate(targetId string, label int, candidate interface{}) {
+	target := c.getClientById(targetId)
+	if target != nil {
 		m := map[string]interface{}{
 			"event_name": "receive_ice_candidate",
 			"data": map[string]interface{}{
+				"source_id": c.id,
 				"label":     label,
 				"candidate": candidate,
-				"socketId":  socketId,
+				"target_id": targetId,
 			},
 		}
 
 		msg, _ := json.Marshal(m)
 		//fmt.Println(string(msg))
-		destination.sendMessage(msg)
+		target.sendMessage(msg)
 	}
 }
 
 func (c *Client) sendAnswer(targetId string, sdp map[string]string) {
 	target := c.getClientById(targetId)
-	if target != nil{
+	if target != nil {
 		m := map[string]interface{}{
 			"event_name": "receive_answer",
 			"data": map[string]interface{}{
-				"sdp":      sdp,
-				"socketId": targetId,
+				"source_id": c.id,
+				"target_id": targetId,
+				"sdp":       sdp,
 			},
 		}
 		msg, _ := json.Marshal(m)
@@ -171,14 +173,15 @@ func (c *Client) sendAnswer(targetId string, sdp map[string]string) {
 	}
 }
 
-func (c *Client) sendOffer(sourceId string, targetId string, sdp map[string]string) {
+func (c *Client) sendOffer(targetId string, sdp map[string]string) {
 	target := c.getClientById(targetId)
 	if target != nil {
 		m := map[string]interface{}{
 			"event_name": "receive_offer",
 			"data": map[string]interface{}{
-				"sdp":      sdp,
-				"socketId": sourceId,
+				"source_id": c.id,
+				"target_id": targetId,
+				"sdp":       sdp,
 			},
 		}
 		msg, _ := json.Marshal(m)
@@ -203,7 +206,7 @@ func (c *Client) joinRoom() {
 		msgNewPeerConnected := map[string]interface{}{
 			"event_name": "new_peer_connected",
 			"data": map[string]interface{}{
-				"socketId": c.id,
+				"target_id": c.id,
 			},
 		}
 		msg1, _ := json.Marshal(msgNewPeerConnected)

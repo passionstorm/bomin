@@ -20,14 +20,14 @@ if (navigator.webkitGetUserMedia) {
     }
 
     // New syntax of getXXXStreams method in M26.
-    if (!webkitRTCPeerConnection.prototype.getLocalStreams) {
-        webkitRTCPeerConnection.prototype.getLocalStreams = function () {
-            return this.localStreams;
-        };
-        webkitRTCPeerConnection.prototype.getRemoteStreams = function () {
-            return this.remoteStreams;
-        };
-    }
+    // if (!webkitRTCPeerConnection.prototype.getLocalStreams) {
+    //     webkitRTCPeerConnection.prototype.getLocalStreams = function () {
+    //         return this.localStreams;
+    //     };
+    //     webkitRTCPeerConnection.prototype.getRemoteStreams = function () {
+    //         return this.remoteStreams;
+    //     };
+    // }
 }
 
 (function () {
@@ -63,7 +63,7 @@ if (navigator.webkitGetUserMedia) {
         };
     };
     // Reference to the lone PeerConnection instance.
-    rtc.peerConnections = {};
+    rtc.peers = {};
     // Array of known peer socket ids
     rtc.connections = [];
     // Stream-related variables.
@@ -138,9 +138,9 @@ if (navigator.webkitGetUserMedia) {
                 var id = rtc._socket.id;
                 //TODO create disconnect stream
                 rtc.fire('disconnect stream', id);
-                if (typeof (rtc.peerConnections[id]) !== 'undefined')
-                    rtc.peerConnections[id].close();
-                delete rtc.peerConnections[id];
+                if (typeof (rtc.peers[id]) !== 'undefined')
+                    rtc.peers[id].close();
+                delete rtc.peers[id];
                 delete rtc.dataChannels[id];
                 delete rtc.connections[id];
             };
@@ -155,8 +155,8 @@ if (navigator.webkitGetUserMedia) {
                     rtc.addDataChannels();
                     rtc.sendOffers();
                 } else {
-                    // var pc = rtc.createPeerConnection(rtc._me);
-                    // pc.ontrack = rtc.gotRemoteStream;
+                    // var pc = rtc.createPeer(rtc._me);
+                    // pc.ontrack = rtc.onRemoteStream;
                 }
             });
 
@@ -167,7 +167,7 @@ if (navigator.webkitGetUserMedia) {
                     sdpMLineIndex: data.candidate.sdpMLineIndex,
                     candidate: data.candidate.candidate
                 });
-                var peer = rtc.peerConnections[peerId];
+                var peer = rtc.peers[peerId];
                 if (!peer || !peer.remoteDescription) {
                     peer.addIceCandidate(candidate).then(null, err => {
                         console.error(data.socketId + ": addIceCandidate <" + err.message + ">")
@@ -176,14 +176,14 @@ if (navigator.webkitGetUserMedia) {
             });
 
             rtc.on('new_peer_connected', function (data) {
-                var socketId = data.target_id;
-                console.log("new_peer_connected " + socketId);
-                rtc.connections.push(socketId);
+                var remoteId = data.target_id;
+                console.log("new_peer_connected " + remoteId);
+                rtc.connections.push(remoteId);
                 delete rtc.offerSent;
-                var pc = rtc.createPeerConnection(socketId);
-                for (var i = 0; i < rtc.streams.length; i++) {
-                    var stream = rtc.streams[i];
-                    pc.addStream(stream);
+                if(rtc.mediaStream){
+                    const pc = rtc.createPeer(remoteId);
+                    pc.addStream(rtc.mediaStream);
+                    rtc.sendOffer(remoteId);
                 }
             });
 
@@ -191,9 +191,9 @@ if (navigator.webkitGetUserMedia) {
                 var id = data.socketId;
                 //TODO disconnect stream
                 rtc.fire('disconnect stream', id);
-                if (typeof (rtc.peerConnections[id]) !== 'undefined')
-                    rtc.peerConnections[id].close();
-                delete rtc.peerConnections[id];
+                if (typeof (rtc.peers[id]) !== 'undefined')
+                    rtc.peers[id].close();
+                delete rtc.peers[id];
                 delete rtc.dataChannels[id];
                 delete rtc.connections[id];
             });
@@ -206,7 +206,7 @@ if (navigator.webkitGetUserMedia) {
             rtc.on('receive_answer', function (data) {
                 const peerId = data.source_id;
                 console.log('receive_answer from: ' + peerId);
-                const pc = rtc.peerConnections[peerId];
+                const pc = rtc.peers[peerId];
                 pc.setRemoteDescription(new nativeRTCSessionDescription(data.sdp)).then(() => {
                     console.log("  Connected to " + peerId);//debug
                 });
@@ -214,10 +214,11 @@ if (navigator.webkitGetUserMedia) {
         };
     };
 
-    rtc.gotRemoteStream = function (e) {
+    rtc.onRemoteStream = function (stream) {
         var video = document.getElementById('remote');
-        if (video.srcObject !== e.streams[0]) {
-            video.srcObject = e.streams[0];
+        if (video.srcObject !== stream) {
+            video.srcObject = stream;
+            video.play();
             console.log('pc2 received remote stream');
         }
     };
@@ -237,16 +238,16 @@ if (navigator.webkitGetUserMedia) {
 
     rtc.createPeerConnections = function () {
         for (var i = 0; i < rtc.connections.length; i++) {
-            rtc.createPeerConnection(rtc.connections[i]);
+            rtc.createPeer(rtc.connections[i]);
         }
     };
 
-    rtc.createPeerConnection = function (id) {
+    rtc.createPeer = function (remoteId) {
         var config = rtc.pc_constraints;
+        if(rtc._me === remoteId) return;
         console.log('create peer connection');
         if (rtc.dataChannelSupport) config = rtc.dataChannelConfig;
-
-        var pc = rtc.peerConnections[id] = new PeerConnection(rtc.SERVER(), config);
+        const pc = rtc.peers[remoteId] = new PeerConnection(rtc.SERVER(), config);
         pc.onicecandidate = function (event) {
             if (event.candidate) {
                 rtc._socket.send(JSON.stringify({
@@ -254,20 +255,27 @@ if (navigator.webkitGetUserMedia) {
                     "data": {
                         "label": event.candidate.sdpMLineIndex,
                         "candidate": event.candidate,
-                        "socketId": id
+                        "socketId": remoteId
                     }
                 }));
-                console.log('send ice candidate to: ' + id);
+                console.log('send ice candidate to: ' + remoteId);
             }
         };
+        var dontDuplicate = {};
+        pc.ontrack = function(event){
+            console.log('on track');
+            var remoteMediaStream = event.streams[0];
 
+            if(dontDuplicate[remoteMediaStream.id]) return;
+            dontDuplicate[remoteMediaStream.id] = true;
+
+            rtc.onRemoteStream(remoteMediaStream)
+        };
+        console.log(pc.addTrack);
         pc.onopen = function () {
-            // TODO: Finalize this API
             rtc.fire('peer connection opened');
         };
-
         pc.onaddstream = function (event) {
-            // TODO: Finalize this API
             console.log('onaddstream');
             var remoteVideo = document.getElementById('remote');
             remoteVideo.srcObject = event.stream;
@@ -277,10 +285,12 @@ if (navigator.webkitGetUserMedia) {
 
         if (rtc.dataChannelSupport) {
             pc.ondatachannel = function (evt) {
-                if (rtc.debug) console.log('data channel connecting ' + id);
-                rtc.addDataChannel(id, evt.channel);
+                if (rtc.debug) console.log('data channel connecting ' + remoteId);
+                rtc.addDataChannel(remoteId, evt.channel);
             };
         }
+
+
 
         return pc;
     };
@@ -293,16 +303,16 @@ if (navigator.webkitGetUserMedia) {
         } else setTimeout(rtc.waitUntilRemoteStreamStartsFlowing, 50);
     };
 
-    rtc.sendOffer = function (socketId) {
-        console.log('send offer to: ' + socketId);
-        var pc = rtc.peerConnections[socketId];
+    rtc.sendOffer = function (remoteId) {
+        console.log('send offer to: ' + remoteId);
+        var pc = rtc.peers[remoteId];
         pc.createOffer(sdpConstraints).then(d => {
             d.sdp = preferOpus(d.sdp);
             pc.setLocalDescription(d).then(() => {
                 rtc._socket.send(JSON.stringify({
                     "event_name": "send_offer",
                     "data": {
-                        "socketId": socketId,
+                        "socketId": remoteId,
                         "sdp": d
                     }
                 }));
@@ -311,7 +321,7 @@ if (navigator.webkitGetUserMedia) {
     };
 
     rtc.receiveOffer = function (sourceId, targetId, offerSDP) {
-        var pc = rtc.peerConnections[targetId] = new PeerConnection(sdpConstraints);
+        var pc = rtc.peers[targetId] = new PeerConnection(sdpConstraints);
         var rtcSession = new RTCSessionDescription(offerSDP);
         //send answer
         pc.setRemoteDescription(rtcSession).then(() => {
@@ -350,44 +360,66 @@ if (navigator.webkitGetUserMedia) {
             video: !!opt.video,
             audio: !!opt.audio
         };
-
-        // if (getUserMedia) {
-        //     rtc.numStreams++;
-        //     getUserMedia.call(navigator, options, function (stream) {
-        //         rtc.streams.push(stream);
-        //         rtc.initializedStreams++;
-        //         onSuccess(stream);
-        //         if (rtc.initializedStreams === rtc.numStreams) {
-        //             rtc.fire('ready');
-        //         }
-        //     }, function (error) {
-        //         alert("Could not connect stream.");
-        //         onFail(error);
-        //     });
-        // } else {
-        //     alert('webRTC is not yet supported in this browser.');
-        // }
-        const videoLocal = document.getElementById('source');
-        var stream = videoLocal.captureStream();
-        var track = stream.getVideoTracks()[0];
-        track.enabled = true;
-        rtc.numStreams++;
-        rtc.streams.push(stream);
-        rtc.initializedStreams++;
-        onSuccess(stream);
-        if (rtc.initializedStreams === rtc.numStreams) {
-            rtc.fire('ready');
+        if (getUserMedia) {
+            rtc.numStreams++;
+            getUserMedia.call(navigator, options, function (stream) {
+                rtc.streams.push(stream);
+                rtc.initializedStreams++;
+                onSuccess(stream);
+                if (rtc.initializedStreams === rtc.numStreams) {
+                    rtc.fire('ready');
+                }
+            }, function (error) {
+                alert("Could not connect stream.");
+                onFail(error);
+            });
+        } else {
+            alert('webRTC is not yet supported in this browser.');
         }
+        // const videoLocal = document.getElementById('source');
+        // var stream = videoLocal.captureStream();
+        // var track = stream.getVideoTracks()[0];
+        // track.enabled = true;
+        // rtc.numStreams++;
+        // rtc.streams.push(stream);
+        // rtc.initializedStreams++;
+        // onSuccess(stream);
+        // if (rtc.initializedStreams === rtc.numStreams) {
+        //     rtc.fire('ready');
+        // }
     };
 
     rtc.addStreams = function () {
-        for (var i = 0; i < rtc.streams.length; i++) {
-            var stream = rtc.streams[i];
-            for (var connection in rtc.peerConnections) {
-                console.log(connection + " added stream");
-                rtc.peerConnections[connection].addStream(stream);
+        if(rtc.mediaStream){
+            for (var remoteId in rtc.peers) {
+                console.log(remoteId + " added stream");
+                rtc.peers[remoteId].addStream(rtc.mediaStream);
             }
         }
+    };
+
+    // options.bandwidth =
+    var bandwidth = { audio: 50, video: 256, data: 30 * 1000 * 1000 }
+
+    rtc.setBandwidth = function(sdp) {
+        if (moz || !bandwidth /* || navigator.userAgent.match( /Android|iPhone|iPad|iPod|BlackBerry|IEMobile/i ) */) return sdp;
+
+        // remove existing bandwidth lines
+        sdp = sdp.replace( /b=AS([^\r\n]+\r\n)/g , '');
+
+        if (bandwidth.audio) {
+            sdp = sdp.replace( /a=mid:audio\r\n/g , 'a=mid:audio\r\nb=AS:' + bandwidth.audio + '\r\n');
+        }
+
+        if (bandwidth.video) {
+            sdp = sdp.replace( /a=mid:video\r\n/g , 'a=mid:video\r\nb=AS:' + bandwidth.video + '\r\n');
+        }
+
+        if (bandwidth.data) {
+            sdp = sdp.replace( /a=mid:data\r\n/g , 'a=mid:data\r\nb=AS:' + bandwidth.data + '\r\n');
+        }
+
+        return sdp;
     };
 
     rtc.publishStream = function (stream, element) {
@@ -420,12 +452,12 @@ if (navigator.webkitGetUserMedia) {
         var id, pc;
         if (typeof (pcOrId) === 'string') {
             id = pcOrId;
-            pc = rtc.peerConnections[pcOrId];
+            pc = rtc.peers[pcOrId];
         } else {
             pc = pcOrId;
             id = undefined;
-            for (var key in rtc.peerConnections) {
-                if (rtc.peerConnections[key] === pc) id = key;
+            for (var key in rtc.peers) {
+                if (rtc.peers[key] === pc) id = key;
             }
         }
 
@@ -462,7 +494,7 @@ if (navigator.webkitGetUserMedia) {
 
         channel.onclose = function (event) {
             delete rtc.dataChannels[id];
-            delete rtc.peerConnections[id];
+            delete rtc.peers[id];
             delete rtc.connections[id];
             if (rtc.debug) console.log('data stream close ' + id);
             rtc.fire('data stream close', channel);
@@ -486,7 +518,7 @@ if (navigator.webkitGetUserMedia) {
     rtc.addDataChannels = function () {
         if (!rtc.dataChannelSupport) return;
 
-        for (var connection in rtc.peerConnections)
+        for (var connection in rtc.peers)
             rtc.createDataChannel(connection);
     };
 

@@ -35,13 +35,7 @@ remote:
 <div id="listener"></div>
 
 <script>
-    var cameraStream;
-    rtc.connect('wss://192.168.1.2/ws');
-    function join() {
-    }
-    function log(content) {
-        document.getElementById("console").innerHTML += content + '<br/>';
-    }
+    rtc.connect('wss://192.168.1.48/ws');
     function publishCAM() {
         rtc.createStream({video: true, audio: false}, function (stream) {
             rtc.publishStream(stream, 'source');
@@ -51,43 +45,6 @@ remote:
         rtc.unPublishStream();
     }
 
-    var channel, channel2;
-
-    function createDC() {
-        channel = client.createDataChannel("Test1");
-        channel.onmessage = function (data) {
-            alert(data)
-        }
-    }
-
-    function sendDC() {
-        channel.send("test1");
-    }
-
-    function createDC2() {
-        channel2 = client.createDataChannel("Test2");
-        channel2.onmessage = function (data) {
-            alert(data)
-        }
-    }
-
-    function sendDC2() {
-        channel2.send("test2");
-    }
-
-    function controllee() {
-        publishScreen();
-        dc_rd = client.createDataChannel("RD");
-        dc_rd.onmessage = function (data) {
-            post(data)
-        }
-    }
-
-    var dc_rd;
-
-    function controller() {
-        init_controller(document.getElementById('v'));
-    }
 
 </script>
 

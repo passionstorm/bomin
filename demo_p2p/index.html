@@ -22,7 +22,9 @@
 
 source:
 <p>
-    <video id="source" src="demo.mp4"></video>
+    <video id="source" autoplay></video>
+
+    <button id="join_remote">Open remote</button>
 </p>
 remote:
 <p>
@@ -35,7 +37,11 @@ remote:
 <div id="listener"></div>
 
 <script>
-    rtc.connect('wss://192.168.1.48/ws');
+
+    function join() {
+        rtc.connect('wss://192.168.1.6/ws');
+    }
+
     function publishCAM() {
         rtc.createStream({video: true, audio: false}, function (stream) {
             rtc.publishStream(stream, 'source');

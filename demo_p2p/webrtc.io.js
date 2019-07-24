@@ -58,7 +58,12 @@ if (navigator.webkitGetUserMedia) {
     rtc.SERVER = function () {
         return {
             "iceServers": [{
-                "url": "stun:stun.l.google.com:19302"
+                'urls': [
+                    'stun:stun.l.google.com:19302',
+                    'stun:stun1.l.google.com:19302',
+                    'stun:stun2.l.google.com:19302',
+                    'stun:stun.l.google.com:19302?transport=udp',
+                ]
             }]
         };
     };
@@ -76,8 +81,6 @@ if (navigator.webkitGetUserMedia) {
     rtc.dataChannelConfig = {
         "optional": [{
             "RtpDataChannels": true
-        }, {
-            "DtlsSrtpKeyAgreement": true
         }]
     };
 
@@ -132,7 +135,7 @@ if (navigator.webkitGetUserMedia) {
     // };
 
     // rtc.dataChannelSupport = rtc.checkDataChannelSupport();
-
+    rtc.isOfferer = false;
 
     /**
      * Connects to the websocket server.
@@ -174,9 +177,18 @@ if (navigator.webkitGetUserMedia) {
             };
 
             rtc.on('get_peers', function (data) {
+                if(rtc._me && rtc._me === data.you) return;
                 console.log("get_peers start...");
                 rtc.connections = data.connections;
                 rtc._me = data.you;
+                if(data.stream_id === data.you) {
+                    rtc.isOfferer = true;
+                    console.log('you are streamer');
+                } else{
+                    rtc.isOfferer = false;
+                    console.log('you are remoter');
+                }
+
                 if (rtc.debug) console.log('your id: ' + data.you);
                 if (rtc.offerSent) { // 'ready' was fired before 'get_peers'
                     rtc.createPeerConnections();
@@ -184,8 +196,8 @@ if (navigator.webkitGetUserMedia) {
                     rtc.addDataChannels();
                     rtc.sendOffers();
                 } else { // remoter
-                    const remoteId = data.you;
-                    rtc.createPeer(remoteId);
+                    // const remoteId = data.you;
+                    // rtc.createPeer(remoteId);
                 }
             });
 
@@ -214,7 +226,7 @@ if (navigator.webkitGetUserMedia) {
                 var dataChannelDict = {};
                 if (rtc.mediaStream) {
                     const pc = rtc.createPeer(remoteId);
-                    pc.addStream(rtc.mediaStream);
+                    // pc.addStream(rtc.mediaStream);
                     rtc.sendOffer(remoteId);
                 }
             });
@@ -247,13 +259,11 @@ if (navigator.webkitGetUserMedia) {
     };
 
     rtc.onRemoteStream = function (stream) {
-        var video = document.getElementById('remote');
-        if (video.srcObject !== stream) {
+        var video = document.getElementById('source');
             console.log('pc2 received remote stream');
             video.srcObject = stream;
             video.play();
 
-        }
     };
 
     rtc.sendOffers = function () {
@@ -279,15 +289,11 @@ if (navigator.webkitGetUserMedia) {
         var config = rtc.pc_constraints;
         console.log('create peer remote: ' + remoteId);
         // if (rtc.dataChannelSupport) config = rtc.dataChannelConfig;
-        const pc = rtc.peers[remoteId] = new PeerConnection(rtc.SERVER(), config);
+        const pc = rtc.peers[remoteId] = new PeerConnection(rtc.SERVER());
         if (rtc.mediaStream) {
-            if (pc.addStream) {
-                console.log('addstream: ' + remoteId);
-                pc.addStream(rtc.mediaStream);
-            } else if (pc.addTrack && rtc.mediaStream.getTracks()[0]) {
-                console.log('addTrack: ' + remoteId);
-                pc.addTrack(rtc.mediaStream.getTracks()[0], rtc.mediaStream);
-            }
+            rtc.mediaStream.getTracks().forEach((track) => {
+                pc.addTrack(track, rtc.mediaStream);
+            });
         }
 
         pc.onicecandidate = function (event) {
@@ -305,31 +311,75 @@ if (navigator.webkitGetUserMedia) {
         };
         var dontDuplicate = {};
         pc.ontrack = function (event) {
-            console.log('on track');
+            // console.log('on track');
             var remoteMediaStream = event.streams[0];
 
             if (dontDuplicate[remoteMediaStream.id]) return;
             dontDuplicate[remoteMediaStream.id] = true;
-
-            rtc.onRemoteStream(remoteMediaStream)
+            var video = document.getElementById('source');
+            console.log('pc2 received remote stream');
+            video.srcObject = remoteMediaStream;
+            video.play();
+            // rtc.onRemoteStream(remoteMediaStream)
         };
         pc.onopen = function () {
             rtc.fire('peer connection opened');
         };
-        // pc.onaddstream = function (event) {
-        //     console.log('onaddstream');
-        //     var remoteVideo = document.getElementById('remote');
-        //     remoteVideo.src = event.stream;
-        // };
+        pc.onaddstream = function (event) {
+            console.log('onaddstream');
+            var remoteVideo = document.getElementById('source');
+            remoteVideo.srcObject = event.stream;
+            // const promise = remoteVideo.play();
+            // if (promise instanceof Promise) {
+            //     promise.catch(function(error) {
+            //         console.log(error.message);
+            //         // Check if it is the right error
+            //         if (error.name === 'NotAllowedError') {
+            //             autoPlayAllowed = false;
+            //         } else {
+            //             // Don't throw the error so that we get to the then
+            //             // or throw it but set the autoPlayAllowed to true in here
+            //         }
+            //     }).then(function() {
+            //         if (autoPlayAllowed) {
+            //             // Autoplay is allowed - continue with initialization
+            //             console.log('autoplay allowed')
+            //         } else {
+            //             // Autoplay is not allowed - wait for the user to trigger the play button manually
+            //             console.log('autoplay NOT allowed')
+            //         }
+            //     });
+            //
+            // } else {
+            //     // Unknown if allowed
+            //     // Note: you could fallback to simple event listeners in this case
+            //     console.log('autoplay unknown')
+            // }
+            remoteVideo.play().then(function () {
+                console.log('The play() Promise fulfilled! Rock on!');
+            }).catch(function (err) {
+                console.log('The play() Promise rejected!');
+                document.getElementById('join_remote').onclick = function(){
+                    remoteVideo.play();
+                }
+            });
+            // remoteVideo.oncanplay = () => ;
+            // rtc.waitUntilRemoteStreamStartsFlowing(remoteVideo);
+        };
 
-        if (rtc.offerSent) {
+        // const channel = pc.createDataChannel('RTCDataChannel', {
+        //     reliable: false
+        // });
+        // rtc.addDataChannel(remoteId, channel);
+        if (rtc.isOfferer) {
+            var channel = pc.createDataChannel('channel', {})
+            rtc.addDataChannel(remoteId, channel);
+        } else {
+            console.log('onaddchannel');
             pc.ondatachannel = function (evt) {
                 if (rtc.debug) console.log('data channel connecting ' + remoteId);
                 rtc.addDataChannel(remoteId, evt.channel);
             };
-        } else {
-            var channel = pc.createDataChannel('sctp', {})
-            rtc.addDataChannel(remoteId, channel);
         }
         return pc;
     };
@@ -346,7 +396,7 @@ if (navigator.webkitGetUserMedia) {
         console.log('send offer to: ' + remoteId);
         var pc = rtc.peers[remoteId];
         pc.createOffer(sdpConstraints).then(d => {
-            d.sdp = preferOpus(d.sdp);
+            d.sdp = preferOpus(d.sdp)
             pc.setLocalDescription(d).then(() => {
                 rtc._socket.send(JSON.stringify({
                     "event_name": "send_offer",
@@ -360,7 +410,7 @@ if (navigator.webkitGetUserMedia) {
     };
 
     rtc.receiveOffer = function (senderId, remoteId, offerSDP) {
-        var pc = rtc.peers[remoteId];
+        var pc = rtc.peers[remoteId] = rtc.createPeer(remoteId);
         var rtcSession = new RTCSessionDescription(offerSDP);
         //send answer
         pc.setRemoteDescription(rtcSession).then(() => {
@@ -399,34 +449,36 @@ if (navigator.webkitGetUserMedia) {
             video: !!opt.video,
             audio: !!opt.audio
         };
-        // if (getUserMedia) {
-        //     rtc.numStreams++;
-        //     getUserMedia.call(navigator, options, function (stream) {
-        //         rtc.streams.push(stream);
-        //         rtc.initializedStreams++;
-        //         onSuccess(stream);
-        //         if (rtc.initializedStreams === rtc.numStreams) {
-        //             rtc.fire('ready');
-        //         }
-        //     }, function (error) {
-        //         alert("Could not connect stream.");
-        //         onFail(error);
-        //     });
-        // } else {
-        //     alert('webRTC is not yet supported in this browser.');
-        // }
-        const videoLocal = document.getElementById('source');
-        var mediaVideo = new MediaStream
-        var stream = videoLocal.srcObject;
-        var track = stream.getVideoTracks()[0];
-        track.enabled = true;
-        rtc.numStreams++;
-        rtc.streams.push(stream);
-        rtc.initializedStreams++;
-        onSuccess(stream);
-        if (rtc.initializedStreams === rtc.numStreams) {
-            rtc.fire('ready');
+        if (getUserMedia) {
+            rtc.numStreams++;
+            getUserMedia.call(navigator, options, function (stream) {
+                stream.getTracks();
+                rtc.streams.push(stream);
+                rtc.initializedStreams++;
+                rtc.isOfferer = true;
+                onSuccess(stream);
+                if (rtc.initializedStreams === rtc.numStreams) {
+                    rtc.fire('ready');
+                }
+            }, function (error) {
+                alert("Could not connect stream.");
+                onFail(error);
+            });
+        } else {
+            alert('webRTC is not yet supported in this browser.');
         }
+        // const videoLocal = document.getElementById('source');
+        // var mediaVideo = new MediaStream
+        // var stream = videoLocal.srcObject;
+        // var track = stream.getVideoTracks()[0];
+        // track.enabled = true;
+        // rtc.numStreams++;
+        // rtc.streams.push(stream);
+        // rtc.initializedStreams++;
+        // onSuccess(stream);
+        // if (rtc.initializedStreams === rtc.numStreams) {
+        //     rtc.fire('ready');
+        // }
     };
 
     rtc.addStreams = function () {
@@ -569,6 +621,7 @@ function preferOpus(sdp) {
     var mLineIndex = null;
     // Search for m line.
     for (var i = 0; i < sdpLines.length; i++) {
+        // console.log(sdpLines[i]);
         if (sdpLines[i].search('m=audio') !== -1) {
             mLineIndex = i;
             break;

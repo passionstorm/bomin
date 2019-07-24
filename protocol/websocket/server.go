@@ -33,7 +33,7 @@ var upgrader = websocket.Upgrader{
 }
 
 type Room struct {
-	Admin   string
+	StreamId   string
 	Name    string
 	Clients []*Client
 }
@@ -195,6 +195,7 @@ func (c *Client) joinRoom() {
 	c.Room = room
 	if room == nil {
 		room = &Room{Name: "room"}
+		room.StreamId = c.id
 		room.Clients = append(room.Clients, c)
 		rooms = append(rooms, room)
 	} else {
@@ -231,6 +232,7 @@ func (c *Client) joinRoom() {
 		"data": map[string]interface{}{
 			"connections": connections,
 			"you":         c.id,
+			"stream_id":  room.StreamId,
 		},
 	}
 	msg2, _ := json.Marshal(msgGetPeers)

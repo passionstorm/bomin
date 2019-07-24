@@ -125,6 +125,7 @@ func startHTTPSWeb() {
 	})
 	go func() {
 		//err := http.ListenAndServe(":80", nil)
+
 		err := http.ListenAndServeTLS(":443", "cert.pem", "key.pem", nil)
 		//err := http.ListenAndServeTLS(":443", "/usr/local/share/ca-certificates/public.pem", "/usr/local/share/ca-certificates/private.key", nil)
 		if err != nil {
@@ -155,7 +156,6 @@ func main() {
 
 			fmt.Printf("Interface Address #%v : %v\n", k, v.String())
 		}
-		fmt.Println("------------------------------------")
 	}
 
 	defer func() {

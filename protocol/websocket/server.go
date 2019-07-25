@@ -17,6 +17,7 @@ const (
 	pongWait = 60 * time.Second
 	// Send pings to peer with this period. Must be less than pongWait.
 	pingPeriod = (pongWait * 9) / 10
+	//pingPeriod = 5 * time.Second
 	// Maximum message size allowed from peer.
 	maxMessageSize = 65535
 )
@@ -38,16 +39,16 @@ type Room struct {
 	Clients []*Client
 }
 
-func (r *Room) removeClient(id string) {
-	for i, client := range r.Clients {
-		if client.id == id {
-			r.Clients[i] = r.Clients[len(r.Clients)-1]
-			r.Clients[len(r.Clients)-1] = nil
-			r.Clients = r.Clients[:len(r.Clients)-1]
-			return
-		}
-	}
-}
+//func (r *Room) removeClient(id string) {
+//	for i, client := range r.Clients {
+//		if client.id == id {
+//			r.Clients[i] = r.Clients[len(r.Clients)-1]
+//			r.Clients[len(r.Clients)-1] = nil
+//			r.Clients = r.Clients[:len(r.Clients)-1]
+//			return
+//		}
+//	}
+//}
 
 // Client is a middleman between the websocket connection and the hub.
 type Client struct {
@@ -60,9 +61,16 @@ type Client struct {
 	send chan []byte
 }
 
-func remove(s []int, i int) []int {
-	s[len(s)-1], s[i] = s[i], s[len(s)-1]
-	return s[:len(s)-1]
+func (r * Room) removeClient(clientId string)  {
+	for i, c := range r.Clients{
+		if c.id != clientId {
+			continue
+		}
+		s := r.Clients
+		s[len(s)-1], s[i] = s[i], s[len(s)-1]
+		r.Clients = s[:len(s)-1]
+		return
+	}
 }
 
 type SignalDetail struct {
@@ -91,6 +99,7 @@ func (c *Client) sendMessage(msg []byte) {
 
 func (c *Client) readPump() {
 	defer func() {
+		c.leaveRoom()
 		c.hub.unregister <- c
 		c.conn.Close()
 	}()
@@ -105,7 +114,7 @@ func (c *Client) readPump() {
 			}
 			break
 		}
-		fmt.Println(string(message))
+		//fmt.Println(string(message))
 		signal := Signal{}
 		_ = json.Unmarshal(message, &signal)
 		switch event := signal.EventName; event {
@@ -136,6 +145,22 @@ func (c *Client) getClientById(id string) *Client {
 		}
 	}
 	return nil
+}
+
+func (c *Client) leaveRoom() {
+	for _, target := range c.Room.Clients{
+		if c.id == target.id{
+			continue
+		}
+		m := map[string]interface{}{
+			"event_name": "remove_peer_connected",
+			"data": map[string]interface{}{
+				"socketId": c.id,
+			},
+		}
+		msg, _ := json.Marshal(m)
+		target.send <- msg
+	}
 }
 
 func (c *Client) sendIceCandidate(targetId string, label int, candidate interface{}) {
@@ -191,16 +216,16 @@ func (c *Client) sendOffer(targetId string, sdp map[string]string) {
 
 func (c *Client) joinRoom() {
 	var room *Room
-	room = getRoom("room")
-	c.Room = room
+	room = c.hub.GetRoom("room")
 	if room == nil {
 		room = &Room{Name: "room"}
 		room.StreamId = c.id
 		room.Clients = append(room.Clients, c)
-		rooms = append(rooms, room)
+		c.hub.rooms[room] = true
 	} else {
 		room.Clients = append(room.Clients, c)
 	}
+	c.Room = room
 	connections := make([]string, 0)
 	if room != nil {
 		// inform the peers that they have a new peer
@@ -239,15 +264,7 @@ func (c *Client) joinRoom() {
 	c.send <- msg2
 }
 
-func getRoom(name string) *Room {
-	for _, r := range rooms {
-		if r.Name == name {
-			return r
-		}
-	}
 
-	return nil
-}
 
 // writePump pumps messages from the hub to the websocket connection.
 //

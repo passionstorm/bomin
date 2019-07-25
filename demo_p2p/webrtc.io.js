@@ -173,7 +173,11 @@ if (navigator.webkitGetUserMedia) {
                     rtc.peers[id].close();
                 delete rtc.peers[id];
                 delete rtc.dataChannels[id];
-                delete rtc.connections[id];
+
+                var index = rtc.connections.indexOf(id);    // <-- Not supported in <IE9
+                if (index !== -1) {
+                    rtc.connections.splice(index, 1);
+                }
             };
 
             rtc.on('get_peers', function (data) {
@@ -218,7 +222,7 @@ if (navigator.webkitGetUserMedia) {
 
             rtc.on('new_peer_connected', function (data) {
                 var remoteId = data.target_id;
-                console.log("new_peer_connected " + remoteId);
+                if(rtc.debug) console.log("new_peer_connected " + remoteId);
                 rtc.connections.push(remoteId);
                 delete rtc.offerSent;
                 // protocol: 'text/chat', preset: true, stream: 16
@@ -232,14 +236,16 @@ if (navigator.webkitGetUserMedia) {
             });
 
             rtc.on('remove_peer_connected', function (data) {
-                var id = data.socketId;
-                //TODO disconnect stream
-                rtc.fire('disconnect stream', id);
-                if (typeof (rtc.peers[id]) !== 'undefined')
-                    rtc.peers[id].close();
-                delete rtc.peers[id];
-                delete rtc.dataChannels[id];
-                delete rtc.connections[id];
+                const socketId = data.socketId;
+                if(rtc.debug) console.log('remove_peer_connected ' + socketId);
+                if (typeof (rtc.peers[socketId]) !== 'undefined')  rtc.peers[socketId].close();
+
+                delete rtc.peers[socketId];
+                delete rtc.dataChannels[socketId];
+                var index = rtc.connections.indexOf(socketId);    // <-- Not supported in <IE9
+                if (index !== -1) {
+                    rtc.connections.splice(index, 1);
+                }
             });
 
             rtc.on('receive_offer', function (data) {
@@ -284,6 +290,7 @@ if (navigator.webkitGetUserMedia) {
             rtc.createPeer(rtc.connections[i]);
         }
     };
+
 
     rtc.createPeer = function (remoteId) {
         var config = rtc.pc_constraints;
@@ -449,36 +456,36 @@ if (navigator.webkitGetUserMedia) {
             video: !!opt.video,
             audio: !!opt.audio
         };
-        if (getUserMedia) {
-            rtc.numStreams++;
-            getUserMedia.call(navigator, options, function (stream) {
-                stream.getTracks();
-                rtc.streams.push(stream);
-                rtc.initializedStreams++;
-                rtc.isOfferer = true;
-                onSuccess(stream);
-                if (rtc.initializedStreams === rtc.numStreams) {
-                    rtc.fire('ready');
-                }
-            }, function (error) {
-                alert("Could not connect stream.");
-                onFail(error);
-            });
-        } else {
-            alert('webRTC is not yet supported in this browser.');
-        }
-        // const videoLocal = document.getElementById('source');
-        // var mediaVideo = new MediaStream
-        // var stream = videoLocal.srcObject;
+        // if (getUserMedia) {
+        //     rtc.numStreams++;
+        //     getUserMedia.call(navigator, options, function (stream) {
+        //         stream.getTracks();
+        //         rtc.streams.push(stream);
+        //         rtc.initializedStreams++;
+        //         rtc.isOfferer = true;
+        //         onSuccess(stream);
+        //         if (rtc.initializedStreams === rtc.numStreams) {
+        //             rtc.fire('ready');
+        //         }
+        //     }, function (error) {
+        //         alert("Could not connect stream.");
+        //         onFail(error);
+        //     });
+        // } else {
+        //     alert('webRTC is not yet supported in this browser.');
+        // }
+        const videoLocal = document.getElementById('source');
+        videoLocal.src = URL.createObjectURL('demo.mp4');;
+        var stream = videoLocal.srcObject;
         // var track = stream.getVideoTracks()[0];
         // track.enabled = true;
-        // rtc.numStreams++;
-        // rtc.streams.push(stream);
-        // rtc.initializedStreams++;
-        // onSuccess(stream);
-        // if (rtc.initializedStreams === rtc.numStreams) {
-        //     rtc.fire('ready');
-        // }
+        rtc.numStreams++;
+        rtc.streams.push(stream);
+        rtc.initializedStreams++;
+        onSuccess(stream);
+        if (rtc.initializedStreams === rtc.numStreams) {
+            rtc.fire('ready');
+        }
     };
 
     rtc.addStreams = function () {

@@ -41,7 +41,7 @@ func (h *Hub) Run() {
 			if _, ok := h.clients[client]; ok {
 				room := client.Room
 				if room.StreamId == client.id {
-					delete(h.rooms, room)
+					room.StreamId = ""
 				}
 				room.removeClient(client.id)
 				delete(h.clients, client)

@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>P2P - WebRTC</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="webrtc.io.js"></script>
 </head>
 <body>
@@ -15,14 +16,14 @@
 <fieldset>
     <legend>PUBLISH</legend>
     <p>
-        <button onclick="publishCAM()">cam</button>
-        <button onclick="unPublish()">unpublish</button>
+        <button onclick="publishCAM()" id="cam">cam</button>
+        <button onclick="unPublish()" id="hangup">unpublish</button>
     </p>
 </fieldset>
 
 source:
 <p>
-    <video id="source" autoplay></video>
+    <video id="source" muted="muted"></video>
 
     <button id="join_remote">Open remote</button>
 </p>
@@ -30,14 +31,29 @@ remote:
 <p>
     <video id="remote" autoplay></video>
 </p>
-<fieldset>
+<fieldset id="debugDiv">
     <legend>LOG</legend>
     <p id="console" style="width:100%;font-size:14px;"></p>
 </fieldset>
 <div id="listener"></div>
 
 <script>
-    rtc.connect('wss://192.168.1.48/ws');
+    if (typeof console  != "undefined")
+        if (typeof console.log != 'undefined')
+            console.olog = console.log;
+        else
+            console.olog = function() {};
+
+    console.log = function(message) {
+        console.olog(message);
+        document.getElementById('debugDiv').innerHTML += '<p>' + message + '</p>';
+    };
+    console.error = console.debug = console.info =  console.log
+
+    const protocol = (location.protocol != 'https:') ? 'ws' : 'wss';
+    rtc.connect(protocol + '://192.168.1.48/ws');
+
+    // rtc.connect('wss://192.168.1.48/ws');
     function join() {
     }
 

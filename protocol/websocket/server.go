@@ -114,7 +114,7 @@ func (c *Client) readPump() {
 			}
 			break
 		}
-		//fmt.Println(string(message))
+		fmt.Println(string(message))
 		signal := Signal{}
 		_ = json.Unmarshal(message, &signal)
 		switch event := signal.EventName; event {
@@ -223,9 +223,13 @@ func (c *Client) joinRoom() {
 		room.Clients = append(room.Clients, c)
 		c.hub.rooms[room] = true
 	} else {
+
 		room.Clients = append(room.Clients, c)
 	}
 	c.Room = room
+	if 	c.Room.StreamId == "" {
+		c.Room.StreamId = c.id
+	}
 	connections := make([]string, 0)
 	if room != nil {
 		// inform the peers that they have a new peer
@@ -236,6 +240,8 @@ func (c *Client) joinRoom() {
 			},
 		}
 		msg1, _ := json.Marshal(msgNewPeerConnected)
+
+
 		for _, i := range room.Clients {
 			if i != nil {
 				if i.id == c.id {

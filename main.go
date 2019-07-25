@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bomin/configure"
 	"bomin/protocol/hls"
 	"bomin/protocol/httpflv"
 	"bomin/protocol/httpopera"
@@ -12,7 +11,6 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"time"
 )
 
 var (
@@ -134,43 +132,21 @@ func startHTTPSWeb() {
 	}()
 }
 
-func main() {
-	ifaces, _ := net.Interfaces()
-	for _, i := range ifaces {
-		//if i.Name != "en0" {
-		//	continue
-		//}
-		//sfmt.Printf("Name : %v \n", i.Name)
-
-		byNameInterface, err := net.InterfaceByName(i.Name)
-
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		//fmt.Println("Interface by Name : ", byNameInterface)
-
-		addresses, err := byNameInterface.Addrs()
-
-		for k, v := range addresses {
-
-			fmt.Printf("Interface Address #%v : %v\n", k, v.String())
-		}
-	}
-
-	defer func() {
-		if r := recover(); r != nil {
-			log.Println("bomin panic: ", r)
-			time.Sleep(1 * time.Second)
-		}
-	}()
-
-	err := configure.LoadConfig(*configfilename)
+func GetOutboundIP() net.IP {
+	conn, err := net.Dial("udp", "8.8.8.8:80")
 	if err != nil {
-		return
+		log.Fatal(err)
 	}
+	defer conn.Close()
 
+	localAddr := conn.LocalAddr().(*net.UDPAddr)
+
+	return localAddr.IP
+}
+
+func main() {
 	stream := rtmp.NewRtmpStream()
+	fmt.Println(GetOutboundIP())
 	//hlsServer := startHls()
 	//startHTTPFlv(stream)
 	startHTTPSWeb()

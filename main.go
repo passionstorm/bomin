@@ -121,10 +121,31 @@ func startHTTPSWeb() {
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
 		websocket.ServeWs(hub, w, r)
 	})
-	go func() {
-		//err := http.ListenAndServe(":80", nil)
 
-		err := http.ListenAndServeTLS(":443", "cert.pem", "key.pem", nil)
+	// Create a CA certificate pool and add cert.pem to it
+	//caCert, err := ioutil.ReadFile("tls/cert.pem")
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+	//caCertPool := x509.NewCertPool()
+	//caCertPool.AppendCertsFromPEM(caCert)
+	//
+	//// Create the TLS Config with the CA pool and enable Client certificate validation
+	//tlsConfig := &tls.Config{
+	//	ClientCAs: caCertPool,
+	//	ClientAuth: tls.RequireAndVerifyClientCert,
+	//}
+	//tlsConfig.BuildNameToCertificate()
+
+	// Create a Server instance to listen on port 8443 with the TLS config
+	//server := &http.Server{
+	//	Addr:      ":443",
+	//	//TLSConfig: tlsConfig,
+	//}
+
+	go func() {
+		err := http.ListenAndServe(":80", nil)
+		//err := http.ListenAndServeTLS(":443","cert.pem", "key.pem",nil)
 		//err := http.ListenAndServeTLS(":443", "/usr/local/share/ca-certificates/public.pem", "/usr/local/share/ca-certificates/private.key", nil)
 		if err != nil {
 			log.Println(err)

@@ -1,4 +1,4 @@
-var PeerConnection = (window.PeerConnection || window.webkitPeerConnection00 || window.webkitRTCPeerConnection);
+var PeerConnection = (window.RTCPeerConnection || window.webkitRTCPeerConnection || window.webkitPeerConnection00 || window.webkitRTCPeerConnection);
 var URL = (window.URL || window.webkitURL);
 var getUserMedia = navigator.webkitGetUserMedia;
 var nativeRTCIceCandidate = window.RTCIceCandidate;

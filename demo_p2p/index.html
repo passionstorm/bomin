@@ -51,7 +51,7 @@ remote:
     console.error = console.debug = console.info =  console.log
 
     const protocol = (location.protocol != 'https:') ? 'ws' : 'wss';
-    rtc.connect(protocol + '://192.168.1.48/ws');
+    rtc.connect(protocol + '://192.168.1.3/ws');
 
     // rtc.connect('wss://192.168.1.48/ws');
     function join() {

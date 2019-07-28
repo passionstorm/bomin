@@ -114,7 +114,7 @@ func (c *Client) readPump() {
 			}
 			break
 		}
-		fmt.Println(string(message))
+		//fmt.Println(string(message))
 		signal := Signal{}
 		_ = json.Unmarshal(message, &signal)
 		switch event := signal.EventName; event {

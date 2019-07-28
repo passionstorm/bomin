@@ -5,8 +5,8 @@ var nativeRTCIceCandidate = window.RTCIceCandidate;
 var nativeRTCSessionDescription = window.RTCSessionDescription; // order is very important: "RTCSessionDescription" defined in Nighly but useless
 
 var sdpConstraints = {
-    'OfferToReceiveAudio': 0,
-    'OfferToReceiveVideo': 1
+    'OfferToReceiveAudio': true,
+    'OfferToReceiveVideo': true
 };
 
 if (navigator.webkitGetUserMedia) {
@@ -206,6 +206,7 @@ if (navigator.webkitGetUserMedia) {
                     candidate: data.candidate.candidate
                 });
                 const peer = rtc.peers[peerId];
+                console.log(candidate);
                 if(peer && candidate){
                     peer.addIceCandidate(candidate).then(null, err => {
                         console.error(data.socketId + ": addIceCandidate <" + err.message + ">")
@@ -231,7 +232,9 @@ if (navigator.webkitGetUserMedia) {
             rtc.on('remove_peer_connected', function (data) {
                 const socketId = data.socketId;
                 if (rtc.debug) console.log(socketId + ' has left the room');
-                if (typeof (rtc.peers[socketId]) !== 'undefined') rtc.peers[socketId].close();
+                if (typeof (rtc.peers[socketId]) !== 'undefined'){
+                    rtc.peers[socketId].close();
+                }
 
                 delete rtc.peers[socketId];
                 delete rtc.dataChannels[socketId];
@@ -514,7 +517,7 @@ if (navigator.webkitGetUserMedia) {
         }
 
         rtc.mediaStream = stream;
-        // element.srcObject = stream;
+        element.srcObject = stream;
         element.play()
     };
 

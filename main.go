@@ -6,6 +6,7 @@ import (
 	"bomin/protocol/httpopera"
 	"bomin/protocol/rtmp"
 	"bomin/protocol/websocket"
+	"bomin/utils/network"
 	"flag"
 	"fmt"
 	"log"
@@ -153,21 +154,11 @@ func startHTTPSWeb() {
 	}()
 }
 
-func GetOutboundIP() net.IP {
-	conn, err := net.Dial("udp", "8.8.8.8:80")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer conn.Close()
 
-	localAddr := conn.LocalAddr().(*net.UDPAddr)
-
-	return localAddr.IP
-}
 
 func main() {
 	stream := rtmp.NewRtmpStream()
-	fmt.Println(GetOutboundIP())
+	fmt.Println(network.GetOutboundIP())
 	//hlsServer := startHls()
 	//startHTTPFlv(stream)
 	startHTTPSWeb()

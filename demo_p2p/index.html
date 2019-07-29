@@ -9,7 +9,7 @@
 <body>
 <fieldset>
     <legend>JOIN</legend>
-    <p>group_id:<input id="group_id"/>
+    <p>room:<input id="group_id"/>
         <button onclick="join()">JOIN</button>
         ID:<span id="id"></span></p>
 </fieldset>
@@ -45,7 +45,7 @@ source:
     console.error = console.debug = console.info =  console.log
 
     const protocol = (location.protocol != 'https:') ? 'ws' : 'wss';
-    rtc.connect(protocol + '://192.168.1.6/ws');
+    rtc.connect(protocol + '://192.168.1.48/ws');
 
     // rtc.connect('wss://192.168.1.48/ws');
     function join() {

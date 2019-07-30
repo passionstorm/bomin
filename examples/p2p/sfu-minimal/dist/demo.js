@@ -14,11 +14,14 @@ window.createSession = isPublisher => {
   pc.oniceconnectionstatechange = e => log(pc.iceConnectionState)
   pc.onicecandidate = event => {
     if (event.candidate === null) {
-      document.getElementById('localSessionDescription').value = btoa(JSON.stringify(pc.localDescription))
-      $.post("/sdp", {sdp: JSON.stringify(pc.localDescription)})
-          .done(function (sd) {
-            pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(atob(sd))))
-          });
+      $.ajax({
+        url: '/sdp',
+        method : "POST",
+        data: JSON.stringify(pc.localDescription),
+        dataType: "text",
+      }).done(function (sd) {
+        pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(atob(sd))))
+      });
     }
   }
 
@@ -61,6 +64,4 @@ window.createSession = isPublisher => {
   for (let i = 0; i < btns.length; i++) {
     btns[i].style = 'display: none'
   }
-
-  document.getElementById('signalingContainer').style = 'display: block'
 }

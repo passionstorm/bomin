@@ -2,6 +2,7 @@ package signal
 
 import (
 	"flag"
+	"fmt"
 	"net/http"
 	"strconv"
 )
@@ -16,9 +17,10 @@ func HTTPSDPServer() (chan string, chan string) {
 	fs := http.FileServer(webDir)
 	http.Handle("/", fs)
 	http.HandleFunc("/sdp", func(w http.ResponseWriter, r *http.Request) {
+		answer = make(chan string)
 		body := r.FormValue("sdp")
 		sdpChan <- body
-		w.Write([]byte(<-answer))
+		fmt.Fprint(w, <- answer)
 	})
 
 	go func() {

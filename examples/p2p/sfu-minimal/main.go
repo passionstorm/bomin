@@ -111,7 +111,6 @@ func main() {
 	localTrack := <-localTrackChan
 
 	for {
-		fmt.Println("")
 		fmt.Println("Curl an base64 SDP to start sendonly peer connection")
 
 		recvOnlyOffer := webrtc.SessionDescription{}

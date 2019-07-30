@@ -2,6 +2,7 @@ package signal
 
 import (
 	"flag"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -9,19 +10,20 @@ import (
 )
 
 // HTTPSDPServer starts a HTTP Server that consumes SDPs
-func HTTPSDPServer() (chan   []byte, chan string) {
+func HTTPSDPServer() (chan []byte, chan string) {
 	port := flag.Int("port", 9090, "http server port")
 	flag.Parse()
 	sdpChan := make(chan []byte)
-	answer := make(chan string)
+	answerChan := make(chan string)
 	webDir := http.Dir("examples/p2p/sfu-minimal/dist")
 	fs := http.FileServer(webDir)
 	http.Handle("/", fs)
 	http.HandleFunc("/sdp", func(w http.ResponseWriter, r *http.Request) {
-		body,_ := ioutil.ReadAll(r.Body)
+		body, _ := ioutil.ReadAll(r.Body)
+		fmt.Println(string(body))
 		defer r.Body.Close()
 		sdpChan <- body
-		io.WriteString(w, <- answer)
+		io.WriteString(w, <-answerChan)
 	})
 
 	go func() {
@@ -31,5 +33,5 @@ func HTTPSDPServer() (chan   []byte, chan string) {
 		}
 	}()
 
-	return sdpChan, answer
+	return sdpChan, answerChan
 }

@@ -104,7 +104,6 @@ func main() {
 		panic(err)
 	}
 
-
 	answerChan <- signal.Encode(answer)
 	// Get the LocalDescription and take it to base64 so we can paste in browser
 
@@ -146,6 +145,6 @@ func main() {
 		}
 
 		// Get the LocalDescription and take it to base64 so we can paste in browser
-		fmt.Println(signal.Encode(answer))
+		answerChan <- signal.Encode(answer)
 	}
 }

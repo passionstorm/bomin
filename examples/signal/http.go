@@ -3,32 +3,162 @@ package signal
 import (
 	"flag"
 	"fmt"
+	"github.com/pion/rtcp"
+	"github.com/pion/webrtc/v2"
+	"io"
+	"io/ioutil"
 	"net/http"
 	"strconv"
+	"time"
 )
 
+type Client struct {
+}
+
+func (c *Client) Connect(sdpByte []byte)  string{
+	// Everything below is the Pion WebRTC API, thanks for using it ❤️.
+	// Create a MediaEngine object to configure the supported codec
+	m := webrtc.MediaEngine{}
+
+	// Setup the codecs you want to use.
+	// Only support VP8, this makes our proxying code simpler
+	m.RegisterCodec(webrtc.NewRTPVP8Codec(webrtc.DefaultPayloadTypeVP8, 90000))
+
+	// Create the API object with the MediaEngine
+	api := webrtc.NewAPI(webrtc.WithMediaEngine(m))
+
+	offer := webrtc.SessionDescription{}
+	Decode(sdpByte, &offer)
+
+	peerConnectionConfig := webrtc.Configuration{
+		ICEServers: []webrtc.ICEServer{
+			{
+				URLs: []string{"stun:stun.l.google.com:19302"},
+			},
+		},
+	}
+
+	// Create a new RTCPeerConnection
+	peerConnection, err := api.NewPeerConnection(peerConnectionConfig)
+	if err != nil {
+		panic(err)
+	}
+
+	// Allow us to receive 1 video track
+	if _, err = peerConnection.AddTransceiver(webrtc.RTPCodecTypeVideo); err != nil {
+		panic(err)
+	}
+
+	// Set a handler for when a new remote track starts, this just distributes all our packets
+	// to connected peers
+	peerConnection.OnTrack(func(remoteTrack *webrtc.Track, receiver *webrtc.RTPReceiver) {
+		// Send a PLI on an interval so that the publisher is pushing a keyframe every rtcpPLIInterval
+		// This can be less wasteful by processing incoming RTCP events, then we would emit a NACK/PLI when a viewer requests it
+		go func() {
+			ticker := time.NewTicker(time.Second * 3)
+			for range ticker.C {
+				if rtcpSendErr := peerConnection.WriteRTCP([]rtcp.Packet{&rtcp.PictureLossIndication{MediaSSRC: remoteTrack.SSRC()}}); rtcpSendErr != nil {
+					fmt.Println(rtcpSendErr)
+				}
+			}
+		}()
+
+		// Create a local track, all our SFU clients will be fed via this track
+		localTrack, newTrackErr := peerConnection.NewTrack(remoteTrack.PayloadType(), remoteTrack.SSRC(), "video", "pion")
+		if newTrackErr != nil {
+			panic(newTrackErr)
+		}
+		fmt.Println("Curl an base64 SDP to start sendonly peer connection")
+
+		recvOnlyOffer := webrtc.SessionDescription{}
+		Decode(sdpByte, &recvOnlyOffer)
+
+		// Create a new PeerConnection
+		peerConnection, err := api.NewPeerConnection(peerConnectionConfig)
+		if err != nil {
+			panic(err)
+		}
+
+		_, err = peerConnection.AddTrack(localTrack)
+		if err != nil {
+			panic(err)
+		}
+
+		// Set the remote SessionDescription
+		err = peerConnection.SetRemoteDescription(recvOnlyOffer)
+		if err != nil {
+			panic(err)
+		}
+
+		// Create answer
+		answer, err := peerConnection.CreateAnswer(nil)
+		if err != nil {
+			panic(err)
+		}
+
+		// Sets the LocalDescription, and starts our UDP listeners
+		err = peerConnection.SetLocalDescription(answer)
+		if err != nil {
+			panic(err)
+		}
+
+		// Get the LocalDescription and take it to base64 so we can paste in browser
+		fmt.Println(Encode(answer))
+
+		rtpBuf := make([]byte, 1400)
+		for {
+			i, readErr := remoteTrack.Read(rtpBuf)
+			if readErr != nil {
+				panic(readErr)
+			}
+
+			// ErrClosedPipe means we don't have any subscribers, this is ok if no peers have connected yet
+			if _, err = localTrack.Write(rtpBuf[:i]); err != nil && err != io.ErrClosedPipe {
+				panic(err)
+			}
+		}
+	})
+
+	// Set the remote SessionDescription
+	err = peerConnection.SetRemoteDescription(offer)
+	if err != nil {
+		panic(err)
+	}
+
+	// Create answer
+	answer, err := peerConnection.CreateAnswer(nil)
+	if err != nil {
+		panic(err)
+	}
+
+	// Sets the LocalDescription, and starts our UDP listeners
+	err = peerConnection.SetLocalDescription(answer)
+	if err != nil {
+		panic(err)
+	}
+
+
+	return Encode(answer)
+	// Get the LocalDescription and take it to base64 so we can paste in browser
+}
+
+
 // HTTPSDPServer starts a HTTP Server that consumes SDPs
-func HTTPSDPServer() (chan string, chan string) {
+func HTTPSDPServer()  {
 	port := flag.Int("port", 9090, "http server port")
 	flag.Parse()
-	sdpChan := make(chan string)
-	answer := make(chan string)
 	webDir := http.Dir("examples/p2p/sfu-minimal/dist")
 	fs := http.FileServer(webDir)
 	http.Handle("/", fs)
 	http.HandleFunc("/sdp", func(w http.ResponseWriter, r *http.Request) {
-		answer = make(chan string)
-		body := r.FormValue("sdp")
-		sdpChan <- body
-		fmt.Fprint(w, <- answer)
-	})
-
-	go func() {
-		err := http.ListenAndServe(":"+strconv.Itoa(*port), nil)
-		if err != nil {
-			panic(err)
+		body, _ := ioutil.ReadAll(r.Body)
+		client := &Client{
 		}
-	}()
-
-	return sdpChan, answer
+		anwser := client.Connect(body)
+		io.WriteString(w, anwser)
+	})
+	err := http.ListenAndServe(":"+strconv.Itoa(*port), nil)
+	if err != nil {
+		panic(err)
+	}
 }

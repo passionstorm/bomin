@@ -1,27 +1,59 @@
+<!DOCTYPE html>
 <html>
 <head>
     <title>P2P - WebRTC</title>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <link href="demo.css">
-    <script
-            src="https://code.jquery.com/jquery-3.4.1.min.js"
-            integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
-            crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jquerymobile/1.4.5/jquery.mobile.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="sdputils.js"></script>
+    <script src="create_offer.js"></script>
     <script src="demo.js"></script>
-
+    <style>
+        textarea {
+            width: 100%;
+        }
+        fieldset {
+            margin: 20px 0;
+        }
+    </style>
 </head>
 <body>
-Video<br/>
-<video id="video1" width="160" height="120" autoplay muted="muted" playsinline></video> <br/>
-
-<button class="createSessionButton" onclick="window.createSession(true)"> Publish a Broadcast</button>
-<button class="createSessionButton" onclick="window.createSession(false)"> Join a Broadcast</button><br/>
+<fieldset>
+    <legend>CreateOffer()</legend>
+    <div id="constraints">
+        <div>
+            <input id="audio" type="checkbox"><label for="audio">Offer to receive audio</label>
+        </div>
+        <div>
+            <input id="video" type="checkbox"><label for="video">Offer to receive video</label>
+        </div>
+        <div>
+            <input id="vad" type="checkbox"><label for="vad">Voice activity detection</label>
+        </div>
+        <div>
+            <input id="restart" type="checkbox"><label for="restart">Ice restart</label>
+        </div>
+    </div>
+    <textarea id="output"></textarea>
+</fieldset>
 
 <fieldset>
-    <legend>Logs</legend>
-    <div id="logs"></div>
+    <legend>Video Stream</legend>
+    <video id="video1" width="160" height="120" autoplay muted="muted" playsinline></video>
+    <br/>
+
+    <button class="createSessionButton" onclick="window.createSession(true)"> Publish a Broadcast</button>
+    <button class="createSessionButton" onclick="window.createSession(false)"> Join a Broadcast</button>
+    <br/>
+
+    <fieldset>
+        <legend>Logs</legend>
+        <div id="logs"></div>
+    </fieldset>
 </fieldset>
+
 </body>
 </html>
 

@@ -20,7 +20,7 @@ func HTTPSDPServer() (chan []byte, chan string) {
 	http.Handle("/", fs)
 	http.HandleFunc("/sdp", func(w http.ResponseWriter, r *http.Request) {
 		body, _ := ioutil.ReadAll(r.Body)
-		fmt.Println(string(body))
+		fmt.Printf(string(body))
 		defer r.Body.Close()
 		sdpChan <- body
 		io.WriteString(w, <-answerChan)

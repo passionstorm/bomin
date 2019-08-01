@@ -2,6 +2,7 @@ package main
 
 import (
 	"bomin/examples/signal"
+	"bomin/utils/network"
 	"fmt"
 	"github.com/pion/rtcp"
 	"github.com/pion/webrtc/v2"
@@ -14,6 +15,7 @@ const (
 )
 
 func main() {
+	fmt.Printf(network.GetOutboundIP())
 	sdpChan, answerChan := signal.HTTPSDPServer()
 
 	// Everything below is the Pion WebRTC API, thanks for using it ❤️.

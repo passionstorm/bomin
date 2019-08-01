@@ -2,7 +2,6 @@ package signal
 
 import (
 	"flag"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -20,7 +19,7 @@ func HTTPSDPServer() (chan []byte, chan string) {
 	http.Handle("/", fs)
 	http.HandleFunc("/sdp", func(w http.ResponseWriter, r *http.Request) {
 		body, _ := ioutil.ReadAll(r.Body)
-		fmt.Printf(string(body))
+		//fmt.Printf(string(body))
 		defer r.Body.Close()
 		sdpChan <- body
 		io.WriteString(w, <-answerChan)

@@ -43,9 +43,6 @@ window.createSession = isPublisher => {
             }catch (e) {
                 log(e.message)
             }
-
-            // el.autoplay = true
-            // el.controls = true
         }
     }
 

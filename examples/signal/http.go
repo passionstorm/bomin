@@ -31,7 +31,7 @@ var config = webrtc.Configuration{
 }
 
 type Hub struct {
-	Creator  chan *Room
+	Creator  chan *Creator
 	Joiner   chan *webrtc.PeerConnection
 	Rooms    map[string]*Room
 	Response chan string
@@ -43,7 +43,7 @@ type Client struct {
 
 func NewHub() *Hub {
 	return &Hub{
-		Creator:  make(chan *Room),
+		Creator:  make(chan *Creator),
 		Joiner:   make(chan *webrtc.PeerConnection),
 		Rooms:    make(map[string]*Room),
 		Response: make(chan string),
@@ -51,16 +51,20 @@ func NewHub() *Hub {
 }
 
 func (h *Hub) Run() {
-	//for {
-	//	select {
-	//	case room := <-h.Creator:
-	//		//roomId = roomId + 1
-	//		//h.Rooms[roomId] = room
-	//		//case pc := <-h.Joiner:
-	//		//	room := h.Rooms[0]
-	//		//	JoinLive()
-	//	}
-	//}
+	for {
+		select {
+		case creator := <-h.Creator:
+			roomId = roomId + 1
+			fmt.Println("listen local track")
+			localTrack := <-creator.LocalTrack
+			h.Rooms[string(roomId)] = &Room{
+				Id:         roomId,
+				Streamer:   creator.PeerConnection,
+				LocalTrack: localTrack,
+			}
+			fmt.Println("created room " + string(roomId))
+		}
+	}
 }
 
 func (h *Hub) JoinLive(api *webrtc.API, roomId int, sdp []byte) string {
@@ -100,15 +104,26 @@ func (h *Hub) JoinLive(api *webrtc.API, roomId int, sdp []byte) string {
 }
 
 func (h *Hub) CreateLive(api *webrtc.API, sdp []byte) string {
-	pc, err := api.NewPeerConnection(config)
+	offer := webrtc.SessionDescription{}
+	Decode(sdp, &offer)
+
+	// Create a new RTCPeerConnection
+	pc, err := api.NewPeerConnection(webrtc.Configuration{
+		ICEServers: []webrtc.ICEServer{
+			{
+				URLs: []string{"stun:stun.l.google.com:19302"},
+			},
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+
 	// Allow us to receive 1 video track
 	if _, err = pc.AddTransceiver(webrtc.RTPCodecTypeVideo); err != nil {
 		panic(err)
 	}
-
 	localTrackChan := make(chan *webrtc.Track)
-	offer := webrtc.SessionDescription{}
-	Decode(sdp, &offer)
 	// Set a handler for when a new remote track starts, this just distributes all our packets
 	// to connected peers
 	pc.OnTrack(func(remoteTrack *webrtc.Track, receiver *webrtc.RTPReceiver) {
@@ -155,20 +170,23 @@ func (h *Hub) CreateLive(api *webrtc.API, sdp []byte) string {
 	if err != nil {
 		panic(err)
 	}
-	roomId = roomId + 1
-	localTrack := <- localTrackChan
-	h.Rooms[string(roomId)] = &Room{
-		Id:         roomId,
-		Streamer:   pc,
-		LocalTrack: localTrack,
+	h.Creator <- &Creator{
+		LocalTrack:     localTrackChan,
+		PeerConnection: pc,
 	}
+	fmt.Println("response answer")
 	return Encode(answer)
+}
+
+type Creator struct {
+	PeerConnection *webrtc.PeerConnection
+	LocalTrack     chan *webrtc.Track
 }
 
 // HTTPSDPServer starts a HTTP Server that consumes SDPs
 func HTTPSDPServer() {
 	hub := NewHub()
-	//go hub.Run()
+	go hub.Run()
 
 	m := webrtc.MediaEngine{}
 	// Setup the codecs you want to use.
@@ -193,7 +211,6 @@ func HTTPSDPServer() {
 		defer func() {
 			r.Body.Close()
 		}()
-		fmt.Println("create")
 		res := hub.CreateLive(api, body)
 		_, _ = io.WriteString(w, res)
 	})

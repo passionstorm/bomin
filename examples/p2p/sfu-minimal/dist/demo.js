@@ -10,12 +10,13 @@ window.createSession = isPublisher => {
             }
         ]
     })
+
     pc.transceivers = [];
     pc.oniceconnectionstatechange = e => log(pc.iceConnectionState)
     pc.onicecandidate = event => {
         if (event.candidate === null) {
             $.ajax({
-                url: '/sdp',
+                url: isPublisher ? '/create' : 'join',
                 method: "POST",
                 data: JSON.stringify(pc.localDescription),
                 dataType: "text",
@@ -29,18 +30,18 @@ window.createSession = isPublisher => {
         navigator.mediaDevices.getUserMedia({video: true, audio: false})
             .then(stream => {
                 pc.addStream(document.getElementById('video1').srcObject = stream)
-                pc.createOffer().then(d =>  pc.setLocalDescription(d)).catch(log)
+                pc.createOffer().then(d => pc.setLocalDescription(d)).catch(log)
             }).catch(log)
     } else {
         pc.addTransceiver('video', {'direction': 'recvonly'})
         pc.createOffer().then(d => pc.setLocalDescription(d)).catch(log)
 
         pc.ontrack = function (event) {
-            try{
+            try {
                 var el = document.getElementById('video1')
                 el.srcObject = event.streams[0]
                 el.play()
-            }catch (e) {
+            } catch (e) {
                 log(e.message)
             }
         }

@@ -1,14 +1,12 @@
 package signal
 
 import (
-	"flag"
 	"fmt"
 	"github.com/pion/rtcp"
 	"github.com/pion/webrtc/v2"
 	"io"
 	"io/ioutil"
 	"net/http"
-	"strconv"
 	"time"
 )
 
@@ -20,7 +18,7 @@ const (
 type Room struct {
 	Id         int
 	Streamer   *webrtc.PeerConnection
-	LocalTrack chan *webrtc.Track
+	LocalTrack *webrtc.Track
 }
 
 var roomId = 0
@@ -31,10 +29,12 @@ var config = webrtc.Configuration{
 		},
 	},
 }
+
 type Hub struct {
-	Creator chan *Room
+	Creator  chan *Room
 	Joiner   chan *webrtc.PeerConnection
-	Rooms    map[int]*Room
+	Rooms    map[string]*Room
+	Response chan string
 }
 
 type Client struct {
@@ -43,25 +43,31 @@ type Client struct {
 
 func NewHub() *Hub {
 	return &Hub{
-		Creator: make(chan *Room),
+		Creator:  make(chan *Room),
 		Joiner:   make(chan *webrtc.PeerConnection),
-		Rooms:    make(map[int]*Room),
+		Rooms:    make(map[string]*Room),
+		Response: make(chan string),
 	}
 }
 
 func (h *Hub) Run() {
-	for {
-		select {
-		case room := <-h.Creator:
-			h.Rooms[room.Id] = room
-		case pc := <-h.Joiner:
-			room := h.Rooms[0]
-			JoinLive()
-		}
-	}
+	//for {
+	//	select {
+	//	case room := <-h.Creator:
+	//		//roomId = roomId + 1
+	//		//h.Rooms[roomId] = room
+	//		//case pc := <-h.Joiner:
+	//		//	room := h.Rooms[0]
+	//		//	JoinLive()
+	//	}
+	//}
 }
 
-func JoinLive(api *webrtc.API, room *Room, sdp []byte)  string{
+func (h *Hub) JoinLive(api *webrtc.API, roomId int, sdp []byte) string {
+	room := h.Rooms[string(roomId)]
+	if room == nil {
+		return ""
+	}
 	recvOnlyOffer := webrtc.SessionDescription{}
 	Decode(sdp, &recvOnlyOffer)
 
@@ -70,7 +76,7 @@ func JoinLive(api *webrtc.API, room *Room, sdp []byte)  string{
 	if err != nil {
 		panic(err)
 	}
-	_, err = peerConnection.AddTrack(<-room.LocalTrack)
+	_, err = peerConnection.AddTrack(room.LocalTrack)
 	if err != nil {
 		panic(err)
 	}
@@ -93,8 +99,13 @@ func JoinLive(api *webrtc.API, room *Room, sdp []byte)  string{
 	return Encode(answer)
 }
 
-func CreateLive(api *webrtc.API, sdp []byte) *Room{
+func (h *Hub) CreateLive(api *webrtc.API, sdp []byte) string {
 	pc, err := api.NewPeerConnection(config)
+	// Allow us to receive 1 video track
+	if _, err = pc.AddTransceiver(webrtc.RTPCodecTypeVideo); err != nil {
+		panic(err)
+	}
+
 	localTrackChan := make(chan *webrtc.Track)
 	offer := webrtc.SessionDescription{}
 	Decode(sdp, &offer)
@@ -144,21 +155,20 @@ func CreateLive(api *webrtc.API, sdp []byte) *Room{
 	if err != nil {
 		panic(err)
 	}
-	roomId++
-	return &Room{
+	roomId = roomId + 1
+	localTrack := <- localTrackChan
+	h.Rooms[string(roomId)] = &Room{
 		Id:         roomId,
 		Streamer:   pc,
-		LocalTrack: localTrackChan,
+		LocalTrack: localTrack,
 	}
+	return Encode(answer)
 }
+
 // HTTPSDPServer starts a HTTP Server that consumes SDPs
-func HTTPSDPServer() (chan []byte, chan string) {
-	port := flag.Int("port", 9090, "http server port")
-	flag.Parse()
-	sdpChan := make(chan []byte)
-	answerChan := make(chan string)
+func HTTPSDPServer() {
 	hub := NewHub()
-	go hub.Run()
+	//go hub.Run()
 
 	m := webrtc.MediaEngine{}
 	// Setup the codecs you want to use.
@@ -171,24 +181,25 @@ func HTTPSDPServer() (chan []byte, chan string) {
 	http.Handle("/", fs)
 	http.HandleFunc("/join", func(w http.ResponseWriter, r *http.Request) {
 		body, _ := ioutil.ReadAll(r.Body)
-		//fmt.Printf(string(body))
-		defer r.Body.Close()
-		io.WriteString(w, <-answerChan)
+		res := hub.JoinLive(api, roomId, body)
+		fmt.Println("join")
+		defer func() {
+			r.Body.Close()
+		}()
+		_, _ = io.WriteString(w, res)
 	})
 	http.HandleFunc("/create", func(w http.ResponseWriter, r *http.Request) {
 		body, _ := ioutil.ReadAll(r.Body)
-		//fmt.Printf(string(body))
-		defer r.Body.Close()
-		sdpChan <- body
-		io.WriteString(w, <-answerChan)
+		defer func() {
+			r.Body.Close()
+		}()
+		fmt.Println("create")
+		res := hub.CreateLive(api, body)
+		_, _ = io.WriteString(w, res)
 	})
 
-	go func() {
-		err := http.ListenAndServe(":"+strconv.Itoa(*port), nil)
-		if err != nil {
-			panic(err)
-		}
-	}()
-
-	return sdpChan, answerChan
+	err := http.ListenAndServe(":9090", nil)
+	if err != nil {
+		panic(err)
+	}
 }

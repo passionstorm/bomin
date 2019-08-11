@@ -10,8 +10,9 @@ import (
 
 func GetMediaAPI() *webrtc.API {
 	m := webrtc.MediaEngine{}
-	m.RegisterCodec(webrtc.NewRTPOpusCodec(webrtc.DefaultPayloadTypeOpus, 48000))
-	m.RegisterCodec(webrtc.NewRTPVP8Codec(webrtc.DefaultPayloadTypeVP8, 90000))
+	//m.RegisterCodec(webrtc.NewRTPOpusCodec(webrtc.DefaultPayloadTypeOpus, 48000))
+	//m.RegisterCodec(webrtc.NewRTPVP8Codec(webrtc.DefaultPayloadTypeVP8, 90000))
+	m.RegisterDefaultCodecs()
 	return webrtc.NewAPI(webrtc.WithMediaEngine(m))
 }
 
@@ -41,7 +42,7 @@ func HTTPSDPServer() {
 		res := hub.CreateLive(api, body)
 		_, _ = io.WriteString(w, res)
 	})
-	err := http.ListenAndServe(":9090", nil)
+	err := http.ListenAndServeTLS(":9090", "cert.pem", "key.pem", nil)
 	if err != nil {
 		panic(err)
 	}

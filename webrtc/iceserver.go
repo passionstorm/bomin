@@ -2,11 +2,6 @@
 
 package webrtc
 
-import (
-	"github.com/pion/ice"
-	"github.com/pion/webrtc/v2/pkg/rtcerr"
-)
-
 // ICEServer describes a single STUN and TURN server that can be used by
 // the ICEAgent to establish a connection with a peer.
 type ICEServer struct {

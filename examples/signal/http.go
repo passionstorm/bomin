@@ -2,7 +2,6 @@ package signal
 
 import (
 	"fmt"
-	"github.com/pion/webrtc/v2"
 	"io"
 	"io/ioutil"
 	"net/http"

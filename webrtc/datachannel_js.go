@@ -5,8 +5,6 @@ package webrtc
 import (
 	"fmt"
 	"syscall/js"
-
-	"github.com/pion/datachannel"
 )
 
 const dataChannelBufferSize = 16384 // Lowest common denominator among browsers

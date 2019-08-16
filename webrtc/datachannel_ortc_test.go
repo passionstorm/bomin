@@ -5,9 +5,6 @@ package webrtc
 import (
 	"testing"
 	"time"
-
-	"github.com/pion/transport/test"
-	"github.com/pion/webrtc/v2/internal/util"
 )
 
 func TestDataChannel_ORTCE2E(t *testing.T) {

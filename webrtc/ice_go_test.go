@@ -3,10 +3,8 @@
 package webrtc
 
 import (
-	"testing"
-
-	"github.com/pion/sdp/v2"
 	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 func TestICECandidateToSDP(t *testing.T) {

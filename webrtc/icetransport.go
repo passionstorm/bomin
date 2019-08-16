@@ -9,7 +9,6 @@ import (
 	"context"
 	"errors"
 	"sync"
-
 )
 
 // ICETransport allows an application access to information about the ICE

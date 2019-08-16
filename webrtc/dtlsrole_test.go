@@ -2,10 +2,8 @@ package webrtc
 
 import (
 	"fmt"
-	"testing"
-
-	"github.com/pion/sdp/v2"
 	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 func TestDTLSRole_String(t *testing.T) {

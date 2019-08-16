@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/pion/logging"
 	"github.com/pion/turn"
 	"log"
 	"net"

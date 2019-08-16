@@ -1,13 +1,13 @@
 package ivfwriter
 
 import (
+	"bomin/rtp"
+	"bomin/rtp/codecs"
 	"encoding/binary"
 	"fmt"
 	"io"
 	"os"
 
-	"github.com/pion/rtp"
-	"github.com/pion/rtp/codecs"
 )
 
 // IVFWriter is used to take RTP packets and write them to an IVF on disk
@@ -65,7 +65,7 @@ func (i *IVFWriter) writeHeader() error {
 }
 
 // WriteRTP adds a new packet and writes the appropriate headers for it
-func (i *IVFWriter) WriteRTP(packet *rtp.Packet) error {
+func (i *IVFWriter) WriteRTP(packet *rt) error {
 	if i.stream == nil {
 		return fmt.Errorf("file not opened")
 	}

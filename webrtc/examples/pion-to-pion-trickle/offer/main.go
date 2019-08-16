@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bomin/webrtc"
+	"bomin/webrtc/examples/internal/signal"
 	"bytes"
 	"encoding/json"
 	"flag"
@@ -9,9 +11,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/pion/webrtc/v2"
-
-	"github.com/pion/webrtc/v2/examples/internal/signal"
 )
 
 func main() {

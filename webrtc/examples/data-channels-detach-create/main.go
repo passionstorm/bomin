@@ -1,13 +1,11 @@
 package main
 
 import (
+	"bomin/webrtc"
+	"bomin/webrtc/examples/internal/signal"
 	"fmt"
 	"io"
 	"time"
-
-	"github.com/pion/webrtc/v2"
-
-	"github.com/pion/webrtc/v2/examples/internal/signal"
 )
 
 const messageSize = 15

@@ -1,12 +1,12 @@
 package rtp
 
 import (
+	"bomin/rtp/codecs"
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
 
-	"github.com/pion/rtp/codecs"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestNtpConversion(t *testing.T) {

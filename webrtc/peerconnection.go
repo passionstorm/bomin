@@ -4,6 +4,8 @@
 package webrtc
 
 import (
+	"bomin/webrtc/internal/util"
+	"bomin/webrtc/pkg/rtcerr"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -14,13 +16,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/pion/logging"
-	"github.com/pion/rtcp"
-	"github.com/pion/sdp/v2"
-
-	"github.com/pion/webrtc/v2/internal/util"
-	"github.com/pion/webrtc/v2/pkg/rtcerr"
 )
 
 // PeerConnection represents a WebRTC connection that establishes a

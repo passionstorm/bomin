@@ -3,10 +3,10 @@
 package webrtc
 
 import (
+	"bomin/ice"
+	"bomin/webrtc/pkg/rtcerr"
 	"testing"
 
-	"github.com/pion/ice"
-	"github.com/pion/webrtc/v2/pkg/rtcerr"
 	"github.com/stretchr/testify/assert"
 )
 

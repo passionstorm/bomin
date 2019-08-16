@@ -1,12 +1,11 @@
 package main
 
 import (
+	"bomin/webrtc"
+	"bomin/webrtc/examples/internal/signal"
 	"fmt"
 	"time"
 
-	"github.com/pion/webrtc/v2"
-
-	"github.com/pion/webrtc/v2/examples/internal/signal"
 )
 
 func main() {

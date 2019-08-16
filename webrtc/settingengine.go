@@ -3,10 +3,9 @@
 package webrtc
 
 import (
-	"time"
-
 	"github.com/pion/ice"
 	"github.com/pion/logging"
+	"time"
 )
 
 // SettingEngine allows influencing behavior in ways that are not

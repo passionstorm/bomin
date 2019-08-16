@@ -2,7 +2,6 @@ package webrtc
 
 import (
 	"fmt"
-
 	"github.com/pion/ice"
 	"github.com/pion/sdp/v2"
 )

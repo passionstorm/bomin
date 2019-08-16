@@ -3,14 +3,13 @@
 package webrtc
 
 import (
+	"bomin/datachannel"
+	"bomin/sctp"
 	"errors"
 	"io"
 	"math"
 	"sync"
 
-	"github.com/pion/datachannel"
-	"github.com/pion/logging"
-	"github.com/pion/sctp"
 )
 
 const sctpMaxChannels = uint16(65535)

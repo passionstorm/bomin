@@ -7,8 +7,8 @@ import (
 	"math/rand"
 	"os"
 
-	"github.com/pion/rtp"
-	"github.com/pion/rtp/codecs"
+	"bomin/rtp"
+	"bomin/rtp/codecs"
 )
 
 const (

@@ -1,13 +1,11 @@
 package ivfwriter
 
 import (
-	"bomin/rtp"
 	"bomin/rtp/codecs"
 	"encoding/binary"
 	"fmt"
 	"io"
 	"os"
-
 )
 
 // IVFWriter is used to take RTP packets and write them to an IVF on disk

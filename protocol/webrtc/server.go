@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/pion/turn"
+	"bomin/turn"
 	"log"
 	"net"
 	"os"

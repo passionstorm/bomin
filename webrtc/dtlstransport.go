@@ -1,6 +1,11 @@
 package webrtc
 
 import (
+	"bomin/dtls"
+	"bomin/srtp"
+	"bomin/webrtc/internal/mux"
+	"bomin/webrtc/internal/util"
+	"bomin/webrtc/pkg/rtcerr"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -10,11 +15,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"bomin/dtls"
-	"bomin/srtp"
-	"bomin/webrtc/internal/mux"
-	"bomin/webrtc/internal/util"
-	"bomin/webrtc/pkg/rtcerr"
 )
 
 // DTLSTransport allows an application access to information about the DTLS

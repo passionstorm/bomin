@@ -14,9 +14,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pion/ice"
-	"github.com/pion/transport/test"
-	"github.com/pion/webrtc/v2/pkg/rtcerr"
+	"bomin/ice"
+	"bomin/transport/test"
+	"bomin/webrtc/pkg/rtcerr"
 	"github.com/stretchr/testify/assert"
 )
 

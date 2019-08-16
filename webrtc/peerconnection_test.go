@@ -9,8 +9,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/pion/logging"
-	"github.com/pion/webrtc/v2/pkg/rtcerr"
+	"bomin/logging"
+	"bomin/webrtc/pkg/rtcerr"
 )
 
 // newPair creates two new peer connections (an offerer and an answerer)
@@ -279,7 +279,7 @@ func TestPeerConnection_GetConfiguration(t *testing.T) {
 	assert.Equal(t, expected.BundlePolicy, actual.BundlePolicy)
 	assert.Equal(t, expected.RTCPMuxPolicy, actual.RTCPMuxPolicy)
 	// TODO(albrow): Uncomment this after #513 is fixed.
-	// See: https://github.com/pion/webrtc/v2/issues/513.
+	// See: https://bomin/webrtc/issues/513.
 	// assert.Equal(t, len(expected.Certificates), len(actual.Certificates))
 	assert.Equal(t, expected.ICECandidatePoolSize, actual.ICECandidatePoolSize)
 }

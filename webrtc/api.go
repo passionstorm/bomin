@@ -2,6 +2,10 @@
 
 package webrtc
 
+import (
+	"bomin/logging"
+)
+
 // API bundles the global funcions of the WebRTC and ORTC API.
 // Some of these functions are also exported globally using the
 // defaultAPI object. Note that the global version of the API

@@ -1,11 +1,12 @@
 package webrtc
 
 import (
+	"bomin/transport/test"
+	"github.com/stretchr/testify/assert"
 	"io"
 	"sync"
 	"testing"
 	"time"
-	"github.com/stretchr/testify/assert"
 )
 
 // expectedLabel represents the label of the data channel we are trying to test.

@@ -3,8 +3,8 @@ package samplebuilder
 import (
 	"testing"
 
-	"github.com/pion/rtp"
-	"github.com/pion/webrtc/v2/pkg/media"
+	"bomin/rtp"
+	"bomin/webrtc/pkg/media"
 	"github.com/stretchr/testify/assert"
 )
 

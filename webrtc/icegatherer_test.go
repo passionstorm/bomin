@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pion/logging"
-	"github.com/pion/transport/test"
+	"bomin/logging"
+	"bomin/transport/test"
 )
 
 func TestNewICEGatherer_Success(t *testing.T) {

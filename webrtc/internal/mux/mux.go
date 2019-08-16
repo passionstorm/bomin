@@ -4,8 +4,8 @@ import (
 	"net"
 	"sync"
 
-	"github.com/pion/logging"
-	"github.com/pion/transport/packetio"
+	"bomin/logging"
+	"bomin/transport/packetio"
 )
 
 // The maximum amount of data that can be buffered before returning errors.

@@ -6,12 +6,16 @@
     <mapping directory="$PROJECT_DIR$/dtls" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/ice" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/logging" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/mdns" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/quic" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/rtcp" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/rtp" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/sctp" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/sdp" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/srtp" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/stun" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/transport" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/turn" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/webrtc" vcs="Git" />
   </component>
 </project>

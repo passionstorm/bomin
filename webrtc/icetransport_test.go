@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pion/transport/test"
+	"bomin/transport/test"
 )
 
 func TestICETransport_OnSelectedCandidatePairChange(t *testing.T) {

@@ -2,6 +2,11 @@
 
 package webrtc
 
+import (
+	"bomin/ice"
+	"bomin/webrtc/pkg/rtcerr"
+)
+
 // ICEServer describes a single STUN and TURN server that can be used by
 // the ICEAgent to establish a connection with a peer.
 type ICEServer struct {

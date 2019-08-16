@@ -15,6 +15,8 @@ import (
 	"testing"
 	"time"
 
+	"bomin/logging"
+	"bomin/transport/test"
 	"github.com/stretchr/testify/assert"
 )
 

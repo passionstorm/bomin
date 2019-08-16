@@ -2,7 +2,7 @@
 
 package webrtc
 
-import "github.com/pion/sdp/v2"
+import "bomin/sdp"
 
 // NewICEGatherer creates a new NewICEGatherer.
 // This constructor is part of the ORTC API. It is not

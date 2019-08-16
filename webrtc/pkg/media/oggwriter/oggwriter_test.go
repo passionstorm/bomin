@@ -6,7 +6,7 @@ import (
 	"io"
 	"testing"
 
-	"github.com/pion/rtp"
+	"bomin/rtp"
 	"github.com/stretchr/testify/assert"
 )
 

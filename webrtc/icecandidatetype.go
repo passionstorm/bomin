@@ -3,7 +3,7 @@ package webrtc
 import (
 	"fmt"
 
-	"github.com/pion/ice"
+	"bomin/ice"
 )
 
 // ICECandidateType represents the type of the ICE candidate used.

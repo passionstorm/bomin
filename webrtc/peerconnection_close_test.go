@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pion/transport/test"
+	"bomin/transport/test"
 )
 
 // TestPeerConnection_Close is moved to it's own file because the tests

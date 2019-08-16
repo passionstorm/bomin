@@ -5,8 +5,8 @@ import (
 	"net"
 	"time"
 
-	"github.com/pion/ice"
-	"github.com/pion/transport/packetio"
+	"bomin/ice"
+	"bomin/transport/packetio"
 )
 
 // Endpoint implements net.Conn. It is used to read muxed packets.

@@ -1,10 +1,10 @@
 package signal
 
 import (
+	"bomin/rtcp"
+	"bomin/webrtc"
 	"errors"
 	"fmt"
-	"github.com/pion/rtcp"
-	"github.com/pion/webrtc/v2"
 	"io"
 	"sync"
 	"time"
@@ -112,14 +112,14 @@ func (h *Hub) JoinLive(api *webrtc.API, roomId int, sdp []byte) string {
 		}
 	}
 	//add track video
-	//videoTrackLock.RLock()
+	videoTrackLock.RLock()
 	_, err = peerConnection.AddTrack(room.VideoTrack)
-	//videoTrackLock.RUnlock()
+	videoTrackLock.RUnlock()
 	checkError(err)
 	//add track audio
-	//audioTrackLock.RLock()
-	_, err = peerConnection.AddTrack(room.AudioTrack)
-	//audioTrackLock.RUnlock()
+	audioTrackLock.RLock()
+	//_, err = peerConnection.AddTrack(room.AudioTrack)
+	audioTrackLock.RUnlock()
 	checkError(err)
 	// Set the remote SessionDescription
 	err = peerConnection.SetRemoteDescription(recvOnlyOffer)
@@ -207,7 +207,7 @@ func (h *Hub) CreateLive(api *webrtc.API, sdp []byte) string {
 	})
 	checkError(err)
 	// Allow us to receive 1 audio track, and 1 video track
-	_, err = pc.AddTransceiver(webrtc.RTPCodecTypeAudio)
+	//_, err = pc.AddTransceiver(webrtc.RTPCodecTypeAudio)
 	checkError(err)
 	_, err = pc.AddTransceiver(webrtc.RTPCodecTypeVideo)
 	checkError(err)
@@ -227,7 +227,7 @@ func (h *Hub) CreateLive(api *webrtc.API, sdp []byte) string {
 		if payloadType == webrtc.DefaultPayloadTypeVP8 || payloadType == webrtc.DefaultPayloadTypeH264 {
 			TrackVideo(newRoom, pc, track)
 		} else if payloadType == webrtc.DefaultPayloadTypeOpus {
-			TrackAudio(newRoom, pc, track)
+			//TrackAudio(newRoom, pc, track)
 		}
 	})
 	// Set the handler for ICE connection state

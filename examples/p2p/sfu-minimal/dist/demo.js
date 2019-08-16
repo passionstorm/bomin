@@ -39,18 +39,35 @@ window.createSession = isPublisher => {
     }
 
     if (isPublisher) {
-        navigator.mediaDevices.getUserMedia({video: true, audio: true})
-            .then(stream => {
-                localStream = stream;
-                pc.addStream(document.getElementById('video1').srcObject = stream)
-                pc.createOffer().then(d => pc.setLocalDescription(d)).catch(log)
-            }).catch(log)
+        // navigator.mediaDevices.getUserMedia({video: true, audio: false})
+        //     .then(stream => {
+        //         localStream = stream;
+        //         stream.getTracks().forEach(track => pc.addTrack(track, stream));
+        //         document.getElementById('video1').srcObject = stream;
+        //         pc.createOffer().then(d => pc.setLocalDescription(d)).catch(log)
+        //     }).catch(log)
+
+        const videoLocal = document.getElementById('video1');
+        videoLocal.src = "demo.mp4";
+        if (/iPad|iPhone|iPod/.test(navigator.userAgent)){
+            videoLocal.autoplay = true;
+        }
+        videoLocal.onloadeddata = function () {
+            console.log('video loaded');
+            var stream = videoLocal.captureStream(0);
+            localStream = stream;
+            stream.getTracks().forEach(track => pc.addTrack(track, stream));
+            document.getElementById('video1').srcObject = stream;
+            pc.createOffer().then(d => pc.setLocalDescription(d)).catch(log)
+        }
+
     } else {
         pc.addTransceiver('video', {'direction': 'recvonly'})
-        pc.addTransceiver('audio', {'direction': 'recvonly'})
+        // pc.addTransceiver('audio', {'direction': 'recvonly'})
         pc.createOffer().then(d => pc.setLocalDescription(d)).catch(log)
         var gotFirstMediaStream = false;
         pc.ontrack = function (event) {
+            log('ontrack')
             try {
                 var el = document.getElementById('video1');
                 var sc = document.getElementById('screen');

@@ -1,5 +1,3 @@
-// +build !js
-
 package webrtc
 
 import (
@@ -12,6 +10,11 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"bomin/dtls"
+	"bomin/srtp"
+	"bomin/webrtc/internal/mux"
+	"bomin/webrtc/internal/util"
+	"bomin/webrtc/pkg/rtcerr"
 )
 
 // DTLSTransport allows an application access to information about the DTLS
